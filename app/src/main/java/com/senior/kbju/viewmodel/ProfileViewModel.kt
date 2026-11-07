@@ -1,0 +1,196 @@
+package com.senior.kbju.viewmodel
+
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.senior.kbju.KbjuApp
+import com.senior.kbju.data.model.ActivityLevel
+import com.senior.kbju.data.model.Gender
+import com.senior.kbju.data.model.Goal
+import com.senior.kbju.data.model.UserProfile
+import com.senior.kbju.notification.MealReminderScheduler
+import com.senior.kbju.utils.AppUpdateChecker
+import com.senior.kbju.utils.AppUpdateInfo
+import com.senior.kbju.utils.CrashHandler
+import com.senior.kbju.utils.DailyTargets
+import com.senior.kbju.utils.NutritionMath
+import com.senior.kbju.utils.parseNumberIn
+import com.senior.kbju.utils.pretty
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+
+class ProfileViewModel(app: Application) : AndroidViewModel(app) {
+
+    private val userPreferences = (app as KbjuApp).userPreferencesRepository
+
+    val height = MutableStateFlow("")
+    val weight = MutableStateFlow("")
+    val age = MutableStateFlow("")
+    val gender = MutableStateFlow<Gender?>(null)
+    val activityLevel = MutableStateFlow<ActivityLevel?>(null)
+    val goal = MutableStateFlow<Goal?>(null)
+    val remindersEnabled = MutableStateFlow(true)
+    val errorMessage = MutableStateFlow<String?>(null)
+    val saved = MutableStateFlow(false)
+    val isEditing = MutableStateFlow(false)
+    val backupStatus = MutableStateFlow<String?>(null)
+    val isBackupBusy = MutableStateFlow(false)
+    val crashReport = MutableStateFlow<String?>(null)
+    val availableUpdate = MutableStateFlow<AppUpdateInfo?>(null)
+    val isCheckingUpdate = MutableStateFlow(false)
+    val updateCheckMessage = MutableStateFlow<String?>(null)
+
+    private data class ParsedInputs(
+        val heightCm: Int,
+        val weightKg: Double,
+        val age: Int,
+        val gender: Gender,
+        val level: ActivityLevel,
+        val goal: Goal
+    )
+
+    init {
+        viewModelScope.launch {
+            crashReport.value = CrashHandler.getLastCrashReport(getApplication())
+            remindersEnabled.value = userPreferences.remindersEnabled.first()
+            val existing = userPreferences.userProfile.first()
+            if (existing != null) {
+                isEditing.value = true
+                height.value = existing.heightCm.toString()
+                weight.value = existing.weightKg.pretty()
+                age.value = existing.age.toString()
+                gender.value = existing.gender
+                activityLevel.value = ActivityLevel.entries.firstOrNull { it.factor == existing.activityFactor }
+                goal.value = Goal.entries.firstOrNull { it.percent == existing.goalPercent }
+            }
+            // Фоновая проверка обновления при входе в профиль
+            try {
+                availableUpdate.value = AppUpdateChecker.checkLatestRelease()
+            } catch (_: Exception) {}
+        }
+    }
+
+    fun checkForUpdates() {
+        viewModelScope.launch {
+            isCheckingUpdate.value = true
+            updateCheckMessage.value = null
+            try {
+                val update = AppUpdateChecker.checkLatestRelease()
+                availableUpdate.value = update
+                if (update == null) {
+                    updateCheckMessage.value = "У вас установлена самая актуальная версия (${com.senior.kbju.BuildConfig.VERSION_NAME})"
+                }
+            } catch (e: Exception) {
+                updateCheckMessage.value = "Не удалось проверить обновления: проверьте интернет"
+            } finally {
+                isCheckingUpdate.value = false
+            }
+        }
+    }
+
+    fun clearCrashReport() {
+        CrashHandler.clearCrashReport(getApplication())
+        crashReport.value = null
+    }
+
+    suspend fun getBackupJson(): String {
+        return (getApplication() as KbjuApp).backupManager.exportToJson()
+    }
+
+    fun restoreBackup(jsonString: String) {
+        viewModelScope.launch {
+            isBackupBusy.value = true
+            try {
+                val result = (getApplication() as KbjuApp).backupManager.importFromJson(jsonString)
+                backupStatus.value = "Восстановлено: ${result.mealsRestored} блюд, ${result.weightsRestored} весов, ${result.foodsRestored} продуктов!"
+                val existing = userPreferences.userProfile.first()
+                if (existing != null) {
+                    height.value = existing.heightCm.toString()
+                    weight.value = existing.weightKg.pretty()
+                    age.value = existing.age.toString()
+                    gender.value = existing.gender
+                    activityLevel.value = ActivityLevel.entries.firstOrNull { it.factor == existing.activityFactor }
+                    goal.value = Goal.entries.firstOrNull { it.percent == existing.goalPercent }
+                }
+            } catch (e: Exception) {
+                backupStatus.value = "Ошибка при чтении файла: ${e.localizedMessage ?: "неверный формат"}"
+            } finally {
+                isBackupBusy.value = false
+            }
+        }
+    }
+
+    fun setReminders(enabled: Boolean) {
+        remindersEnabled.value = enabled
+        viewModelScope.launch {
+            userPreferences.setRemindersEnabled(enabled)
+            if (enabled) {
+                MealReminderScheduler.scheduleAll(getApplication())
+            } else {
+                MealReminderScheduler.cancelAll(getApplication())
+            }
+        }
+    }
+
+    // Расчёт суточной нормы КБЖУ по формуле Миффлина-Сан Жеора:
+    // (10 × вес + 6.25 × рост − 5 × возраст + поправка на пол) × коэффициент активности × (1 ± процент цели).
+    // Возвращает null, если поля заполнены неверно — конкретный текст ошибки даёт validationMessage().
+    fun calculateDailyTargets(): DailyTargets? =
+        parsedInputs()?.let {
+            NutritionMath.dailyTargets(
+                weightKg = it.weightKg,
+                heightCm = it.heightCm,
+                age = it.age,
+                gender = it.gender,
+                activityFactor = it.level.factor,
+                goalPercent = it.goal.percent
+            )
+        }
+
+    fun save() {
+        viewModelScope.launch {
+            val inputs = parsedInputs()
+            errorMessage.value = if (inputs == null) validationMessage() else null
+            val valid = inputs ?: return@launch
+            userPreferences.save(
+                UserProfile(
+                    heightCm = valid.heightCm,
+                    weightKg = valid.weightKg,
+                    age = valid.age,
+                    gender = valid.gender,
+                    activityFactor = valid.level.factor,
+                    goalPercent = valid.goal.percent
+                )
+            )
+            saved.value = true
+        }
+    }
+
+    private fun parsedInputs(): ParsedInputs? {
+        val heightCm = parseNumberIn(height.value, 100.0, 250.0) ?: return null
+        val weightKg = parseNumberIn(weight.value, 25.0, 300.0) ?: return null
+        val ageYears = parseNumberIn(age.value, 18.0, 120.0) ?: return null
+        val selectedGender = gender.value ?: return null
+        val selectedLevel = activityLevel.value ?: return null
+        val selectedGoal = goal.value ?: return null
+        return ParsedInputs(
+            heightCm = heightCm.toInt(),
+            weightKg = weightKg,
+            age = ageYears.toInt(),
+            gender = selectedGender,
+            level = selectedLevel,
+            goal = selectedGoal
+        )
+    }
+
+    private fun validationMessage(): String = when {
+        parseNumberIn(height.value, 100.0, 250.0) == null -> "Проверьте рост: введите число от 100 до 250"
+        parseNumberIn(weight.value, 25.0, 300.0) == null -> "Проверьте вес: введите число от 25 до 300"
+        parseNumberIn(age.value, 18.0, 120.0) == null -> "Проверьте возраст: введите число от 18 до 120"
+        gender.value == null -> "Выберите пол"
+        activityLevel.value == null -> "Выберите, как вы проводите день"
+        goal.value == null -> "Выберите цель"
+        else -> "Заполните все поля"
+    }
+}

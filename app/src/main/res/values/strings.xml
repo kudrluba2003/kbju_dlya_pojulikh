@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Дневник питания</string>
+
+    <!-- Навигация -->
+    <string name="nav_today">Сегодня</string>
+    <string name="nav_add_food">Записать еду</string>
+    <string name="nav_history">История</string>
+    <string name="nav_weight">Вес</string>
+    <string name="nav_profile">Профиль</string>
+
+    <!-- Дашборд -->
+    <string name="dashboard_title">Сегодня</string>
+    <string name="dashboard_target_title">Ваша норма на сегодня</string>
+    <string name="dashboard_kcal_unit">ккал</string>
+    <string name="dashboard_eaten_prefix">Съедено:</string>
+    <string name="dashboard_remaining_prefix">Осталось:</string>
+    <string name="dashboard_burned_prefix">Сожжено:</string>
+    <string name="dashboard_water_title">Водный баланс</string>
+    <string name="dashboard_water_drink_button">ВЫПИТЬ СТАКАН ВОДЫ (250 мл)</string>
+    <string name="dashboard_empty_meals">Пока ничего не записано. Нажмите «Записать еду» внизу экрана.</string>
+
+    <!-- Приёмы пищи -->
+    <string name="meal_breakfast">Завтрак</string>
+    <string name="meal_lunch">Обед</string>
+    <string name="meal_dinner">Ужин</string>
+    <string name="meal_snack">Перекус</string>
+
+    <!-- Добавление еды -->
+    <string name="add_food_title">Добавить еду</string>
+    <string name="add_food_search_label">Название продукта</string>
+    <string name="add_food_voice_search">🎤 СКАЗАТЬ ГОЛОСОМ</string>
+    <string name="add_food_ocr_title">📷 Чтение с этикетки</string>
+    <string name="add_food_ocr_camera">📷 СФОТОГРАФИРОВАТЬ</string>
+    <string name="add_food_ocr_gallery">🖼️ ВЫБРАТЬ ИЗ ГАЛЕРЕИ</string>
+    <string name="add_food_save_button">ЗАПИСАТЬ В ДНЕВНИК</string>
+
+    <!-- Вес -->
+    <string name="weight_title">Контроль веса</string>
+    <string name="weight_save_button">СОХРАНИТЬ ВЕС</string>
+    <string name="weight_chart_title">График веса за 30 дней</string>
+    <string name="weight_history_title">История взвешиваний</string>
+
+    <!-- История и отчёты -->
+    <string name="history_title">История питания</string>
+    <string name="history_send_report">ОТПРАВИТЬ ОТЧЁТ РОДНЫМ ИЛИ ВРАЧУ</string>
+
+    <!-- Профиль и резервное копирование -->
+    <string name="profile_title">Ваш профиль</string>
+    <string name="profile_save">РАССЧИТАТЬ И СОХРАНИТЬ</string>
+    <string name="profile_backup_title">Резервная копия данных</string>
+    <string name="profile_backup_export">📤 ПОДЕЛИТЬСЯ РЕЗЕРВНОЙ КОПИЕЙ</string>
+    <string name="profile_backup_import">📥 ВОССТАНОВИТЬ ИЗ ФАЙЛА</string>
+    <string name="profile_reminders_title">Напоминать о еде</string>
+    <string name="profile_reminders_desc">В 13:00 (обед) и 19:00 (ужин), чтобы не забыть сделать запись</string>
+
+    <!-- Напоминания (уведомления) -->
+    <string name="notif_lunch_title">Время обеда 🍲</string>
+    <string name="notif_lunch_text">Не забудьте записать, что вы покушали на обед.</string>
+    <string name="notif_dinner_title">Время ужина 🍵</string>
+    <string name="notif_dinner_text">Запишите ваш ужин в дневник питания перед сном.</string>
+</resources>
