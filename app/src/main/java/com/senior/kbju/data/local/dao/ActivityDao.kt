@@ -32,4 +32,7 @@ interface ActivityDao {
 
     @Query("DELETE FROM activity_log WHERE id = :id")
     suspend fun deleteLog(id: Long)
+
+    @Query("DELETE FROM activity_log")
+    suspend fun clearAllLogs()
 }

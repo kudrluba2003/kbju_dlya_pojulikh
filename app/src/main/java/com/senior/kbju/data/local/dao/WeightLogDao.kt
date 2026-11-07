@@ -29,4 +29,7 @@ interface WeightLogDao {
 
     @Query("DELETE FROM weight_log WHERE id = :id")
     suspend fun delete(id: Long)
+
+    @Query("DELETE FROM weight_log")
+    suspend fun clearAll()
 }

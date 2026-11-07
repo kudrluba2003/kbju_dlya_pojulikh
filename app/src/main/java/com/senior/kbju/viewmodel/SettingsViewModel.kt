@@ -3,15 +3,19 @@ package com.senior.kbju.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.room.withTransaction
 import com.senior.kbju.BuildConfig
 import com.senior.kbju.KbjuApp
 import com.senior.kbju.notification.MealReminderScheduler
 import com.senior.kbju.utils.AppUpdateChecker
 import com.senior.kbju.utils.AppUpdateInfo
+import com.senior.kbju.utils.FeedbackSendResult
 import com.senior.kbju.utils.FeedbackSender
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class SettingsViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -139,16 +143,17 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         if (trimmed.isBlank() || isSendingFeedback.value) return
         viewModelScope.launch {
             isSendingFeedback.value = true
-            try {
-                FeedbackSender.sendFeedback(trimmed)
-                feedbackSentMessage.value = "✅ Спасибо! Ваш отзыв успешно отправлен разработчику Любови Кудрявцевой."
-                onDone()
-            } catch (e: Exception) {
-                feedbackSentMessage.value = "✅ Спасибо! Ваш отзыв принят."
-                onDone()
-            } finally {
-                isSendingFeedback.value = false
+            feedbackSentMessage.value = null
+            when (FeedbackSender.sendFeedback(trimmed)) {
+                is FeedbackSendResult.Success -> {
+                    feedbackSentMessage.value = "✅ Спасибо! Ваш отзыв успешно отправлен разработчику Любови Кудрявцевой."
+                    onDone()
+                }
+                is FeedbackSendResult.Failure -> {
+                    feedbackSentMessage.value = "⚠️ Не удалось отправить автоматически через интернет. Вы можете отправить на почту kudrluba2003@gmail.com или скопировать текст ниже."
+                }
             }
+            isSendingFeedback.value = false
         }
     }
 
@@ -166,6 +171,21 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
                 backupStatus.value = "Ошибка при чтении файла: ${e.localizedMessage ?: "неверный формат"}"
             } finally {
                 isBackupBusy.value = false
+            }
+        }
+    }
+
+    fun resetAllData(onComplete: () -> Unit = {}) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val db = (getApplication() as KbjuApp).database
+            db.withTransaction {
+                db.mealLogDao().clearAll()
+                db.activityDao().clearAllLogs()
+                db.weightLogDao().clearAll()
+                db.waterLogDao().clearAll()
+            }
+            withContext(Dispatchers.Main) {
+                onComplete()
             }
         }
     }
