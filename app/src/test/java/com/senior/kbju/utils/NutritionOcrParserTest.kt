@@ -138,4 +138,152 @@ class NutritionOcrParserTest {
         assertEquals(3.2, parsed.fat ?: 0.0, 0.01)
         assertEquals(45.0, parsed.carbs ?: 0.0, 0.01)
     }
+
+    @Test
+    fun testRealRussianDairyPackage() {
+        val ocr = """
+            Молоко питьевое пастеризованное 3,2%
+            Пищевая ценность 100 г продукта:
+            жир - 3,2 г, белок - 2,8 г, углеводы - 4,7 г.
+            Энергетическая ценность (калорийность):
+            240 кДж (60 ккал).
+        """.trimIndent()
+
+        val parsed = NutritionOcrParser.parse(ocr)
+        assertEquals(60.0, parsed.kcal ?: 0.0, 0.01)
+        assertEquals(2.8, parsed.protein ?: 0.0, 0.01)
+        assertEquals(3.2, parsed.fat ?: 0.0, 0.01)
+        assertEquals(4.7, parsed.carbs ?: 0.0, 0.01)
+    }
+
+    @Test
+    fun testShortNotationWithColonsAndSemicolons() {
+        val ocr = "Б: 7,5г; Ж: 12,0г; У: 55,2г; 360ккал"
+        val parsed = NutritionOcrParser.parse(ocr)
+        assertEquals(360.0, parsed.kcal ?: 0.0, 0.01)
+        assertEquals(7.5, parsed.protein ?: 0.0, 0.01)
+        assertEquals(12.0, parsed.fat ?: 0.0, 0.01)
+        assertEquals(55.2, parsed.carbs ?: 0.0, 0.01)
+    }
+
+    @Test
+    fun testNumberBeforeNutrientName() {
+        val ocr = """
+            В 100 г продукта содержится:
+            8.5 г белка, 14.0 г жира, 52.0 г углеводов.
+            Энергетическая ценность 370 ккал.
+        """.trimIndent()
+        val parsed = NutritionOcrParser.parse(ocr)
+        assertEquals(370.0, parsed.kcal ?: 0.0, 0.01)
+        assertEquals(8.5, parsed.protein ?: 0.0, 0.01)
+        assertEquals(14.0, parsed.fat ?: 0.0, 0.01)
+        assertEquals(52.0, parsed.carbs ?: 0.0, 0.01)
+    }
+
+    @Test
+    fun testOcrLetterOInNumbers() {
+        val ocr = "белки: 7,O г; жиры: 1O г; углеводы: 5O г; 35O ккал"
+        val parsed = NutritionOcrParser.parse(ocr)
+        assertEquals(350.0, parsed.kcal ?: 0.0, 0.01)
+        assertEquals(7.0, parsed.protein ?: 0.0, 0.01)
+        assertEquals(10.0, parsed.fat ?: 0.0, 0.01)
+        assertEquals(50.0, parsed.carbs ?: 0.0, 0.01)
+    }
+
+    @Test
+    fun testUserPhoto1_EasternWings() {
+        val ocr = """
+            КРЫЛЫШКИ ПО-ВОСТОЧНОМУ УПАКОВАННЫЕ
+            Состав: крылышки куриные, соус соевый (вода, соя, пшеница, соль, консервант (бензоат натрия)), масло растительное, соус чили (вода, томатная паста, сахар, соль, перец чили, чеснок, регулятор кислотности, стабилизатор, консервант), чеснок, сахар, перец. Эн.цен:343.8ккал/439кДж. Пищ.цен:Б-31,8г,Ж-19,2г,У-11,0г Изм.№5, ТУ921-001-49776166-06.
+        """.trimIndent()
+        val parsed = NutritionOcrParser.parse(ocr)
+        assertEquals(343.8, parsed.kcal ?: 0.0, 0.01)
+        assertEquals(31.8, parsed.protein ?: 0.0, 0.01)
+        assertEquals(19.2, parsed.fat ?: 0.0, 0.01)
+        assertEquals(11.0, parsed.carbs ?: 0.0, 0.01)
+    }
+
+    @Test
+    fun testUserPhoto2_MaheevKetchup() {
+        val ocr = """
+            RU КЕТЧУП «ТОМАТНЫЙ». ПЕРВАЯ КАТЕГОРИЯ. ГОСТ 32063-2013.
+            Энергетическая ценность 100 г продукта: 366 кДж/86 ккал.
+            Пищевая ценность (средние значения) 100 г продукта: углеводы - 20,2 г, белки - 1,3 г.
+        """.trimIndent()
+        val parsed = NutritionOcrParser.parse(ocr)
+        assertEquals(86.0, parsed.kcal ?: 0.0, 0.01)
+        assertEquals(1.3, parsed.protein ?: 0.0, 0.01)
+        assertEquals(20.2, parsed.carbs ?: 0.0, 0.01)
+    }
+
+    @Test
+    fun testUserPhoto3_SparShashlik() {
+        val ocr = """
+            ШАШЛЫК ИЗ ОКОРОКА В МАРИНАДЕ НА МАНГАЛЕ
+            Состав: свинина,паприка,морковь,лук,черный перец,имбирь,семена горчицы,соль. ТУ 9214-001-49776166-06. Эн.цен: 174ккал/728кДж. Пищ.цен: б-15,3г,ж-11,7г,у-2,9г. Срок годности при t +65C-3ч.
+        """.trimIndent()
+        val parsed = NutritionOcrParser.parse(ocr)
+        assertEquals(174.0, parsed.kcal ?: 0.0, 0.01)
+        assertEquals(15.3, parsed.protein ?: 0.0, 0.01)
+        assertEquals(11.7, parsed.fat ?: 0.0, 0.01)
+        assertEquals(2.9, parsed.carbs ?: 0.0, 0.01)
+    }
+
+    @Test
+    fun testUserPhoto4_BabyfoxChocolate() {
+        val ocr = """
+            RU МОЛОЧНЫЙ ШОКОЛАД BABYFOX С МОЛОЧНОЙ НАЧИНКОЙ.
+            Пищевая ценность в 100 г продукта (средние значения): белки - 7,5 г; жиры - 38 г (в том числе насыщенные жирные кислоты - 22,3 %, трансизомеры ненасыщенных жирных кислот - 0,34 %); углеводы - 49 г (в том числе сахара - 48,7 г); соль - 0,39 г. Энергетическая ценность/калорийность - 2370 кДж/570 ккал.
+        """.trimIndent()
+        val parsed = NutritionOcrParser.parse(ocr)
+        assertEquals(570.0, parsed.kcal ?: 0.0, 0.01)
+        assertEquals(7.5, parsed.protein ?: 0.0, 0.01)
+        assertEquals(38.0, parsed.fat ?: 0.0, 0.01)
+        assertEquals(49.0, parsed.carbs ?: 0.0, 0.01)
+    }
+
+    @Test
+    fun testUserPhoto1_EasternWings_OcrArtifacts() {
+        // Проверяем устойчивость к оцифровке 'Б' как '6' и латинских символов
+        val ocr = """
+            КРЫЛЫШКИ ПО-ВОСТОЧНОМУ
+            Эн.цен:343.8 / 439кДж.
+            Пищ.цен: 6-31.8g, x-19.2g, y-11.0g
+        """.trimIndent()
+        val parsed = NutritionOcrParser.parse(ocr)
+        assertEquals(343.8, parsed.kcal ?: 0.0, 0.01)
+        assertEquals(31.8, parsed.protein ?: 0.0, 0.01)
+        assertEquals(19.2, parsed.fat ?: 0.0, 0.01)
+        assertEquals(11.0, parsed.carbs ?: 0.0, 0.01)
+    }
+
+    @Test
+    fun testUserPhoto3_SparShashlik_MultilineAndLatin() {
+        // Разрыв строк между Эн.цен и значениями, латиница b, x, y
+        val ocr = """
+            ШАШЛЫК ИЗ ОКОРОКА В МАРИНАДЕ НА МАНГАЛЕ
+            ТУ 9214-001-49776166-06. Эн.цен:
+            174ккал/728кДж.
+            Пищ.цен: b-15,3г, x-11,7г, y-2,9г.
+        """.trimIndent()
+        val parsed = NutritionOcrParser.parse(ocr)
+        assertEquals(174.0, parsed.kcal ?: 0.0, 0.01)
+        assertEquals(15.3, parsed.protein ?: 0.0, 0.01)
+        assertEquals(11.7, parsed.fat ?: 0.0, 0.01)
+        assertEquals(2.9, parsed.carbs ?: 0.0, 0.01)
+    }
+
+    @Test
+    fun testUserPhoto2_MaheevKetchup_NoFatOrder() {
+        val ocr = """
+            КЕТЧУП ТОМАТНЫЙ
+            Энергетическая ценность 100 г продукта: 366 кДж/86 ккал.
+            Пищевая ценность: углеводы - 20,2 г, белки - 1,3 г.
+        """.trimIndent()
+        val parsed = NutritionOcrParser.parse(ocr)
+        assertEquals(86.0, parsed.kcal ?: 0.0, 0.01)
+        assertEquals(1.3, parsed.protein ?: 0.0, 0.01)
+        assertEquals(null, parsed.fat)
+        assertEquals(20.2, parsed.carbs ?: 0.0, 0.01)
+    }
 }

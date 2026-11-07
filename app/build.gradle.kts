@@ -13,8 +13,8 @@ android {
         applicationId = "com.senior.kbju"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.3"
+        versionCode = 6
+        versionName = "1.5"
     }
 
     ksp {
@@ -83,8 +83,8 @@ dependencies {
 
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 
-    // ML Kit Text Recognition (On-device OCR)
-    implementation("com.google.mlkit:text-recognition:16.0.1")
+    // ML Kit Text Recognition (Google Play services - updated with Cyrillic support)
+    implementation("com.google.android.gms:play-services-mlkit-text-recognition:19.0.2")
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.json:json:20240303")

@@ -146,66 +146,23 @@ fun WaterScreen(
             }
         }
 
-        SectionTitle(text = "Настройка дневной нормы")
         Card(
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(containerColor = SoftGray),
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Норма: ${state.targetWaterGlasses} ст. (${state.targetWaterMl} мл)",
-                        fontSize = 19.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        BigButton(
-                            text = "➖",
-                            onClick = {
-                                if (state.targetWaterGlasses > 2) {
-                                    viewModel.updateTargetWater(state.targetWaterGlasses - 1)
-                                }
-                            },
-                            color = Color.LightGray
-                        )
-                        BigButton(
-                            text = "➕",
-                            onClick = {
-                                if (state.targetWaterGlasses < 20) {
-                                    viewModel.updateTargetWater(state.targetWaterGlasses + 1)
-                                }
-                            },
-                            color = AccentBlue
-                        )
-                    }
-                }
-
-                OutlineBigButton(
-                    text = "💧 РАССЧИТАТЬ ПО ВЕСУ (30 мл / кг)",
-                    onClick = {
-                        val weight = state.currentWeightKg
-                        if (weight > 20) {
-                            val ml = (weight * 30.0).roundToInt()
-                            val glasses = (ml / 250.0).roundToInt().coerceIn(4, 16)
-                            viewModel.updateTargetWater(glasses)
-                            waterExplanation = "Для веса ${weight.pretty()} кг норма: ~$ml мл ($glasses ст. по 250 мл)"
-                        }
-                    }
+            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "💧 Ваша текущая норма: ${state.targetWaterGlasses} ст. (${state.targetWaterMl} мл)",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = AccentBlue
                 )
-
-                waterExplanation?.let { text ->
-                    Text(
-                        text = text,
-                        fontSize = 16.sp,
-                        color = AccentBlue,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
+                Text(
+                    text = "Изменить норму или рассчитать её по весу можно на главной вкладке в «Изменить профиль и настройки».",
+                    fontSize = 15.sp,
+                    color = Color.DarkGray
+                )
             }
         }
 

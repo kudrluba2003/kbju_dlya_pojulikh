@@ -36,6 +36,7 @@ import com.senior.kbju.ui.screens.DashboardScreen
 import com.senior.kbju.ui.screens.HistoryScreen
 import com.senior.kbju.ui.screens.NutritionScreen
 import com.senior.kbju.ui.screens.ProfileScreen
+import com.senior.kbju.ui.screens.SettingsScreen
 import com.senior.kbju.ui.screens.WaterScreen
 import com.senior.kbju.ui.screens.WeightScreen
 import com.senior.kbju.ui.theme.AccentGreen
@@ -49,6 +50,7 @@ object Routes {
     const val ACTIVITY = "activity"
     const val WEIGHT = "weight"
     const val HISTORY = "history"
+    const val SETTINGS = "settings"
     const val ADD_FOOD = "add_food"
     const val ADD_ACTIVITY = "add_activity"
 }
@@ -89,7 +91,8 @@ fun AppRoot() {
                     Routes.WATER,
                     Routes.ACTIVITY,
                     Routes.WEIGHT,
-                    Routes.HISTORY
+                    Routes.HISTORY,
+                    Routes.SETTINGS
                 )
             }
 
@@ -111,7 +114,8 @@ fun AppRoot() {
                                 NavigationTabItem(Routes.WATER, "Вода", "💧"),
                                 NavigationTabItem(Routes.ACTIVITY, "Спорт", "🏃"),
                                 NavigationTabItem(Routes.WEIGHT, "Вес", "⚖️"),
-                                NavigationTabItem(Routes.HISTORY, "История", "📅")
+                                NavigationTabItem(Routes.HISTORY, "История", "📅"),
+                                NavigationTabItem(Routes.SETTINGS, "Настройки", "⚙️")
                             )
                             items.forEach { item ->
                                 val selected = currentRoute == item.route
@@ -199,6 +203,9 @@ fun AppRoot() {
                                     }
                                 }
                             )
+                        }
+                        composable(Routes.SETTINGS) {
+                            SettingsScreen()
                         }
                         composable(Routes.ADD_FOOD) {
                             AddFoodScreen(onFinished = { navController.popBackStack() })

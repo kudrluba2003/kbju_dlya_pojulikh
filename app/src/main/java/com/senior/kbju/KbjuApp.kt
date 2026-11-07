@@ -42,7 +42,18 @@ class KbjuApp : Application() {
         applicationScope.launch {
             DatabaseSeeder(database, this@KbjuApp).seedIfEmpty()
             if (userPreferencesRepository.remindersEnabled.first()) {
-                MealReminderScheduler.scheduleAll(this@KbjuApp)
+                val (bHour, bMin) = userPreferencesRepository.breakfastReminderTime.first()
+                val (lHour, lMin) = userPreferencesRepository.lunchReminderTime.first()
+                val (dHour, dMin) = userPreferencesRepository.dinnerReminderTime.first()
+                MealReminderScheduler.scheduleAll(
+                    this@KbjuApp,
+                    breakfastHour = bHour,
+                    breakfastMinute = bMin,
+                    lunchHour = lHour,
+                    lunchMinute = lMin,
+                    dinnerHour = dHour,
+                    dinnerMinute = dMin
+                )
             }
         }
     }

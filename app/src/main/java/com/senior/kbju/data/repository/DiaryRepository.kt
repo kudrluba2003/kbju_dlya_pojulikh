@@ -45,17 +45,23 @@ class DiaryRepository(
             mealLogDao.observeForDay(day)
         }
 
+    fun observeMealsForDay(day: Long): Flow<List<MealLogEntity>> = mealLogDao.observeForDay(day)
+
     @OptIn(ExperimentalCoroutinesApi::class)
     fun observeTodayActivities(): Flow<List<ActivityLogEntity>> =
         observeCurrentEpochDay().flatMapLatest { day ->
             activityDao.observeLogsForDay(day)
         }
 
+    fun observeActivitiesForDay(day: Long): Flow<List<ActivityLogEntity>> = activityDao.observeLogsForDay(day)
+
     @OptIn(ExperimentalCoroutinesApi::class)
     fun observeTodayWater(): Flow<WaterLogEntity?> =
         observeCurrentEpochDay().flatMapLatest { day ->
             waterLogDao.observeForDay(day)
         }
+
+    fun observeWaterForDay(day: Long): Flow<WaterLogEntity?> = waterLogDao.observeForDay(day)
 
     suspend fun addWaterGlass(day: Long = LocalDate.now().toEpochDay()) {
         val current = waterLogDao.getForDay(day)

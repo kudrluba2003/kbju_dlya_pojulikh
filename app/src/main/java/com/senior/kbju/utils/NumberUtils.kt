@@ -4,8 +4,19 @@ import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.Locale
 
-// Безопасный разбор чисел: пользователь может ввести «70,5», «70.5» или текст — краха не будет.
-fun parseNumber(raw: String): Double? = raw.trim().replace(',', '.').toDoubleOrNull()
+// Безопасный разбор чисел: пользователь может ввести «70,5», «70.5», «2.8г» или текст — краха не будет.
+fun parseNumber(raw: String): Double? {
+    val trimmed = raw.trim().replace(',', '.')
+    trimmed.toDoubleOrNull()?.let { return it }
+
+    // Устраняем распространенную ошибку OCR, когда буква 'О'/'o' распознается вместо нуля среди цифр
+    val oFixed = trimmed.replace(Regex("""(?<=\d)[oO]|[oO](?=\d)"""), "0")
+    oFixed.toDoubleOrNull()?.let { return it }
+
+    // Отрезаем хвостовые единицы измерения (например «2.8г», «250ккал», «7.5g», «100ml»)
+    val withoutUnit = oFixed.replace(Regex("""(?iu)[^\d.]+$"""), "").trim()
+    return withoutUnit.toDoubleOrNull()
+}
 
 fun parseNumberIn(raw: String, min: Double, max: Double): Double? =
     parseNumber(raw)?.takeIf { it >= min && it <= max }

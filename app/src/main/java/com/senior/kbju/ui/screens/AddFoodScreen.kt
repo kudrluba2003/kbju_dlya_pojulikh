@@ -69,6 +69,7 @@ import com.senior.kbju.ui.theme.AccentBlue
 import com.senior.kbju.ui.theme.AccentGreen
 import com.senior.kbju.ui.theme.ErrorRed
 import com.senior.kbju.ui.theme.SoftGray
+import com.senior.kbju.utils.NutritionOcrParser
 import com.senior.kbju.utils.pretty
 import com.senior.kbju.viewmodel.AddFoodStep
 import com.senior.kbju.viewmodel.AddFoodViewModel
@@ -162,6 +163,24 @@ private fun CatalogContent(viewModel: AddFoodViewModel) {
     }
 
     if (currentTab == com.senior.kbju.viewmodel.FoodCatalogTab.SIMPLE) {
+        // Кнопки альтернативных способов ввода сразу в поле зрения
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            BigButton(
+                text = "📷 С ЭТИКЕТКИ",
+                onClick = viewModel::chooseLabelMode,
+                color = AccentBlue,
+                modifier = Modifier.weight(1f)
+            )
+            OutlineBigButton(
+                text = "🍳 СВОЁ БЛЮДО",
+                onClick = viewModel::chooseRecipeMode,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
         SectionTitle(text = "Поиск в базе простых продуктов")
         PlainTextField(
             label = "Название продукта",
@@ -183,53 +202,55 @@ private fun CatalogContent(viewModel: AddFoodViewModel) {
             }
         )
 
-        Text(text = "Нажмите на продукт, чтобы записать порцию:", fontSize = 18.sp)
+        // Показываем список только когда пользователь что-то ищет, чтобы экран не забивался длинным списком
+        if (query.isNotBlank()) {
+            Text(
+                text = "Результаты поиска (нажмите для записи):",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium
+            )
 
-        LazyColumn(modifier = Modifier.fillMaxWidth().height(280.dp)) {
-            if (simpleFoods.isEmpty()) {
-                item {
+            val displayedFoods = simpleFoods.take(10)
+            Column(modifier = Modifier.fillMaxWidth()) {
+                if (simpleFoods.isEmpty()) {
                     Text(
-                        text = "Ничего не нашлось. Попробуйте сказать иначе или введите с этикетки ниже.",
+                        text = "Ничего не нашлось. Попробуйте сказать иначе или сфотографировать этикетку выше.",
                         fontSize = 18.sp,
                         modifier = Modifier.padding(vertical = 12.dp)
                     )
-                }
-            }
-            items(simpleFoods, key = { it.id }) { food ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { viewModel.selectQuickFood(food) }
-                        .padding(vertical = 10.dp)
-                ) {
-                    Text(
-                        text = food.name,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "на 100 г: ${food.kcal100.roundToInt()} ккал • Б ${food.protein100.pretty()} • Ж ${food.fat100.pretty()} • У ${food.carbs100.pretty()}" +
-                            (food.category?.let { " • $it" } ?: ""),
-                        fontSize = 18.sp,
-                        color = Color.DarkGray
-                    )
-                    HorizontalDivider(thickness = 1.dp, color = Color(0xFFDDDDDD))
+                } else {
+                    displayedFoods.forEach { food ->
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { viewModel.selectQuickFood(food) }
+                                .padding(vertical = 10.dp)
+                        ) {
+                            Text(
+                                text = food.name,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "на 100 г: ${food.kcal100.roundToInt()} ккал • Б ${food.protein100.pretty()} • Ж ${food.fat100.pretty()} • У ${food.carbs100.pretty()}" +
+                                    (food.category?.let { " • $it" } ?: ""),
+                                fontSize = 18.sp,
+                                color = Color.DarkGray
+                            )
+                            HorizontalDivider(thickness = 1.dp, color = Color(0xFFDDDDDD))
+                        }
+                    }
                 }
             }
         }
-
-        SectionTitle(text = "Другие варианты записи")
-        BigButton(
-            text = "ВВЕСТИ С ЭТИКЕТКИ",
-            onClick = viewModel::chooseLabelMode,
-            color = AccentBlue
-        )
-        OutlineBigButton(
-            text = "🍳 СОБРАТЬ СЛОЖНОЕ БЛЮДО",
-            onClick = viewModel::chooseRecipeMode
-        )
     } else {
         // Раздел «Мои рецепты»
+        BigButton(
+            text = "🍳 СОБРАТЬ НОВОЕ БЛЮДО",
+            onClick = viewModel::chooseRecipeMode,
+            color = AccentGreen
+        )
+
         SectionTitle(text = "Мои рецепты и блюда")
         Card(
             shape = RoundedCornerShape(10.dp),
@@ -263,7 +284,7 @@ private fun CatalogContent(viewModel: AddFoodViewModel) {
                         fontWeight = FontWeight.Medium
                     )
                     Text(
-                        text = "Вы можете собрать сложное блюдо из нескольких ингредиентов, и оно сохранится здесь для быстрого выбора в будущем.",
+                        text = "Вы можете собрать сложное блюдо из нескольких ингредиентов (кнопка выше), и оно сохранится здесь для быстрого выбора в будущем.",
                         fontSize = 17.sp,
                         color = Color.DarkGray
                     )
@@ -271,8 +292,9 @@ private fun CatalogContent(viewModel: AddFoodViewModel) {
             }
         } else {
             Text(text = "Нажмите на рецепт, чтобы записать съеденную порцию:", fontSize = 18.sp)
-            LazyColumn(modifier = Modifier.fillMaxWidth().height(280.dp)) {
-                items(userRecipes, key = { it.id }) { recipe ->
+            Column(modifier = Modifier.fillMaxWidth()) {
+                val displayedRecipes = if (query.isBlank()) userRecipes.take(8) else userRecipes.take(15)
+                displayedRecipes.forEach { recipe ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -305,12 +327,6 @@ private fun CatalogContent(viewModel: AddFoodViewModel) {
                 }
             }
         }
-
-        BigButton(
-            text = "🍳 СОБРАТЬ НОВОЕ БЛЮДО",
-            onClick = viewModel::chooseRecipeMode,
-            color = AccentGreen
-        )
     }
 }
 
@@ -428,7 +444,7 @@ private fun LabelContent(viewModel: AddFoodViewModel) {
         isProcessingOcr = true
         scope.launch(Dispatchers.Default) {
             try {
-                // Масштабируем фото и исправляем поворот по EXIF во избежание OOM и сбоев распознавания
+                // Масштабируем фото с высоким разрешением и исправляем поворот по EXIF
                 val scaledBitmap = ImageUtils.loadRotatedScaledBitmap(context, uri)
                 val image = if (scaledBitmap != null) {
                     InputImage.fromBitmap(scaledBitmap, 0)
@@ -439,8 +455,43 @@ private fun LabelContent(viewModel: AddFoodViewModel) {
                 val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
                 recognizer.process(image)
                     .addOnSuccessListener { visionText ->
-                        isProcessingOcr = false
-                        viewModel.onOcrTextRecognized(visionText.text)
+                        val parsed = NutritionOcrParser.parse(visionText.text)
+                        if (parsed.hasAnyData || scaledBitmap == null) {
+                            isProcessingOcr = false
+                            viewModel.onOcrTextRecognized(visionText.text)
+                        } else {
+                            // Если КБЖУ не найдены при текущей ориентации, проверяем поворот на 90 градусов (для фото боком)
+                            val rotated90 = ImageUtils.rotateBitmap(scaledBitmap, 90f)
+                            recognizer.process(InputImage.fromBitmap(rotated90, 0))
+                                .addOnSuccessListener { r90Text ->
+                                    val r90Parsed = NutritionOcrParser.parse(r90Text.text)
+                                    if (r90Parsed.hasAnyData) {
+                                        isProcessingOcr = false
+                                        viewModel.onOcrTextRecognized(r90Text.text)
+                                    } else {
+                                        // Пробуем 270 градусов
+                                        val rotated270 = ImageUtils.rotateBitmap(scaledBitmap, 270f)
+                                        recognizer.process(InputImage.fromBitmap(rotated270, 0))
+                                            .addOnSuccessListener { r270Text ->
+                                                isProcessingOcr = false
+                                                val r270Parsed = NutritionOcrParser.parse(r270Text.text)
+                                                if (r270Parsed.hasAnyData) {
+                                                    viewModel.onOcrTextRecognized(r270Text.text)
+                                                } else {
+                                                    viewModel.onOcrTextRecognized(visionText.text)
+                                                }
+                                            }
+                                            .addOnFailureListener {
+                                                isProcessingOcr = false
+                                                viewModel.onOcrTextRecognized(visionText.text)
+                                            }
+                                    }
+                                }
+                                .addOnFailureListener {
+                                    isProcessingOcr = false
+                                    viewModel.onOcrTextRecognized(visionText.text)
+                                }
+                        }
                     }
                     .addOnFailureListener { e ->
                         isProcessingOcr = false
@@ -634,31 +685,40 @@ private fun RecipeBuilderContent(viewModel: AddFoodViewModel) {
         value = query,
         onValueChange = viewModel::onSearchQueryChange
     )
-    Text(text = "Нажмите на продукт, чтобы добавить его в блюдо:", fontSize = 18.sp)
 
-    LazyColumn(modifier = Modifier.fillMaxWidth().height(220.dp)) {
-        if (simpleFoods.isEmpty()) {
-            item {
+    // Показываем ингредиенты только при поиске, чтобы не сдвигать вниз список уже добавленных продуктов
+    if (query.isNotBlank()) {
+        Text(
+            text = "Результаты поиска (нажмите для добавления):",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Medium
+        )
+
+        val candidateFoods = simpleFoods.take(8)
+        Column(modifier = Modifier.fillMaxWidth()) {
+            if (simpleFoods.isEmpty()) {
                 Text(
                     text = "Ничего не нашлось. Попробуйте другое слово.",
                     fontSize = 18.sp,
                     modifier = Modifier.padding(vertical = 12.dp)
                 )
-            }
-        }
-        items(simpleFoods, key = { it.id }) { food ->
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { viewModel.addIngredient(food) }
-                    .padding(vertical = 8.dp)
-            ) {
-                Text(text = food.name, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                Text(
-                    text = "на 100 г: ${food.kcal100.roundToInt()} ккал • Б ${food.protein100.pretty()} • Ж ${food.fat100.pretty()} • У ${food.carbs100.pretty()}",
-                    fontSize = 18.sp
-                )
-                HorizontalDivider(thickness = 1.dp, color = Color(0xFFDDDDDD))
+            } else {
+                candidateFoods.forEach { food ->
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { viewModel.addIngredient(food) }
+                            .padding(vertical = 8.dp)
+                    ) {
+                        Text(text = "➕ ${food.name}", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = "на 100 г: ${food.kcal100.roundToInt()} ккал • Б ${food.protein100.pretty()} • Ж ${food.fat100.pretty()} • У ${food.carbs100.pretty()}",
+                            fontSize = 17.sp,
+                            color = Color.DarkGray
+                        )
+                        HorizontalDivider(thickness = 1.dp, color = Color(0xFFDDDDDD))
+                    }
+                }
             }
         }
     }

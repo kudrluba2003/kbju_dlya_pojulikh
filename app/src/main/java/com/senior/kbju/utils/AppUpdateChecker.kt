@@ -57,7 +57,8 @@ object AppUpdateChecker {
                 }
             }
             if (apkDownloadUrl.isNullOrBlank()) {
-                apkDownloadUrl = htmlUrl
+                val tagFormatted = if (rawTag.startsWith("v")) rawTag else "v$rawTag"
+                apkDownloadUrl = "https://github.com/$GITHUB_REPO/releases/download/$tagFormatted/app-release.apk"
             }
 
             val currentVersion = BuildConfig.VERSION_NAME.removePrefix("v").trim()

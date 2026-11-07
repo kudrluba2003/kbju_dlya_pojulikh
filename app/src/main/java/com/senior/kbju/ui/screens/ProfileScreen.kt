@@ -32,7 +32,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -58,6 +61,9 @@ import com.senior.kbju.ui.theme.SoftGray
 import com.senior.kbju.utils.pretty
 import com.senior.kbju.viewmodel.ProfileViewModel
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewModel()) {
@@ -67,43 +73,36 @@ fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewMode
     val targetWeight by viewModel.targetWeight.collectAsState()
     val targetWaterGlasses by viewModel.targetWaterGlasses.collectAsState()
     val age by viewModel.age.collectAsState()
+    val birthDateEpochDay by viewModel.birthDateEpochDay.collectAsState()
     val gender by viewModel.gender.collectAsState()
     val activityLevel by viewModel.activityLevel.collectAsState()
     val goal by viewModel.goal.collectAsState()
-    val remindersEnabled by viewModel.remindersEnabled.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val saved by viewModel.saved.collectAsState()
     val isEditing by viewModel.isEditing.collectAsState()
-    val backupStatus by viewModel.backupStatus.collectAsState()
-    val isBackupBusy by viewModel.isBackupBusy.collectAsState()
     val crashReport by viewModel.crashReport.collectAsState()
-    val availableUpdate by viewModel.availableUpdate.collectAsState()
-    val isCheckingUpdate by viewModel.isCheckingUpdate.collectAsState()
-    val updateCheckMessage by viewModel.updateCheckMessage.collectAsState()
-    val lunchHour by viewModel.lunchHour.collectAsState()
-    val dinnerHour by viewModel.dinnerHour.collectAsState()
     val waterCalcExplanation by viewModel.waterCalcExplanation.collectAsState()
-    val feedbackText by viewModel.feedbackText.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { /* результат запроса разрешения */ }
-
-    val restoreFileLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri != null) {
-            try {
-                val json = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
-                if (!json.isNullOrBlank()) {
-                    viewModel.restoreBackup(json)
-                }
-            } catch (e: Exception) {
-                viewModel.backupStatus.value = "Не удалось открыть файл: ${e.localizedMessage}"
-            }
+    val birthDateText = remember(birthDateEpochDay) {
+        birthDateEpochDay?.let {
+            LocalDate.ofEpochDay(it).format(DateTimeFormatter.ofPattern("d MMMM yyyy г.", Locale("ru")))
         }
+    }
+
+    fun showBirthDatePicker() {
+        val initialDate = birthDateEpochDay?.let { LocalDate.ofEpochDay(it) } ?: LocalDate.of(1960, 1, 1)
+        android.app.DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                val picked = LocalDate.of(year, month + 1, dayOfMonth)
+                viewModel.setBirthDate(picked.toEpochDay())
+            },
+            initialDate.year,
+            initialDate.monthValue - 1,
+            initialDate.dayOfMonth
+        ).show()
     }
 
     // После сохранения параметров в DataStore уходим на главный экран.
@@ -225,12 +224,48 @@ fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewMode
             }
         }
 
-        NumberField(
-            label = "Возраст",
-            value = age,
-            onValueChange = { viewModel.age.value = it },
-            suffix = "полных лет"
-        )
+        SectionTitle(text = "Дата рождения и возраст")
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = SoftGray),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                if (birthDateText != null) {
+                    Text(
+                        text = "🎂 Дата рождения: $birthDateText",
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    val parsedAge = age.toIntOrNull()
+                    if (parsedAge != null && parsedAge > 0) {
+                        Text(
+                            text = "Ваш возраст: ${formatAgeString(parsedAge)} (обновляется автоматически)",
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = AccentGreen
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "Укажите дату рождения — возраст в приложении будет обновляться автоматически каждый год.",
+                        fontSize = 16.sp,
+                        color = Color.DarkGray
+                    )
+                }
+
+                BigButton(
+                    text = if (birthDateText != null) "📅 ИЗМЕНИТЬ ДАТУ РОЖДЕНИЯ" else "📅 ВЫБРАТЬ ДАТУ РОЖДЕНИЯ",
+                    onClick = { showBirthDatePicker() },
+                    color = AccentBlue
+                )
+            }
+        }
 
         SectionTitle(text = "Пол")
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -269,59 +304,64 @@ fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewMode
         SectionTitle(text = "Норма воды в день")
         Card(
             shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftGray)
+            colors = CardDefaults.cardColors(containerColor = SoftGray),
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "Сколько пить в день:", fontSize = 19.sp)
-                    Text(
-                        text = "$targetWaterGlasses ст. (${targetWaterGlasses * 250} мл)",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = AccentBlue
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    BigButton(
-                        text = "➖ 1 стакан",
-                        onClick = { viewModel.setTargetWater(targetWaterGlasses - 1) },
-                        modifier = Modifier.weight(1f),
-                        color = Color.LightGray
-                    )
-                    BigButton(
-                        text = "➕ 1 стакан",
-                        onClick = { viewModel.setTargetWater(targetWaterGlasses + 1) },
-                        modifier = Modifier.weight(1f),
-                        color = AccentBlue
-                    )
-                }
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "💧 Ваша норма: ${targetWaterGlasses * 250} мл ($targetWaterGlasses стаканов)",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = AccentBlue
+                )
+                Text(
+                    text = "Выберите стандартную норму или рассчитайте по весу (30 мл на 1 кг):",
+                    fontSize = 16.sp,
+                    color = Color.DarkGray
+                )
+
+                // Готовые пресеты
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     listOf(4 to "1 л", 6 to "1.5 л", 8 to "2 л").forEach { (glasses, label) ->
                         BigToggleButton(
-                            text = "$glasses ст. ($label)",
+                            text = "$glasses ст.\n($label)",
                             selected = targetWaterGlasses == glasses,
                             onClick = { viewModel.setTargetWater(glasses) },
                             modifier = Modifier.weight(1f)
                         )
                     }
                 }
-                OutlineBigButton(
-                    text = "💧 РАССЧИТАТЬ ПО ВЕСУ (30 мл / кг)",
-                    onClick = viewModel::calculateWaterByWeight
+
+                // Ручной ввод нормы в мл
+                var customWaterInput by remember { mutableStateOf("") }
+                NumberField(
+                    label = "Ввести норму вручную (в миллилитрах)",
+                    value = customWaterInput,
+                    onValueChange = { customWaterInput = it },
+                    suffix = "мл"
                 )
+                BigButton(
+                    text = "СОХРАНИТЬ ВВЕДЁННУЮ НОРМУ",
+                    onClick = {
+                        val ml = customWaterInput.toIntOrNull()
+                        if (ml != null && ml in 500..5000) {
+                            viewModel.applyManualWaterMl(ml)
+                            customWaterInput = ""
+                        }
+                    },
+                    color = AccentBlue
+                )
+
+                // Кнопка рассчитать по весу
+                BigButton(
+                    text = "💧 РАССЧИТАТЬ ПО ВЕСУ (30 мл / кг)",
+                    onClick = viewModel::calculateWaterByWeight,
+                    color = AccentGreen
+                )
+
                 waterCalcExplanation?.let { text ->
                     Text(
                         text = text,
@@ -329,98 +369,6 @@ fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewMode
                         color = AccentBlue,
                         fontWeight = FontWeight.Medium
                     )
-                }
-            }
-        }
-
-        SectionTitle(text = "Напоминания")
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftGray)
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Напоминать о еде",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Уведомления об обеде и ужине, чтобы не забыть сделать запись",
-                            fontSize = 16.sp
-                        )
-                    }
-                    Switch(
-                        checked = remindersEnabled,
-                        onCheckedChange = { checked ->
-                            if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                            }
-                            viewModel.setReminders(checked)
-                        }
-                    )
-                }
-
-                if (remindersEnabled) {
-                    HorizontalDivider(thickness = 1.dp, color = Color(0xFFDDDDDD))
-                    Text(text = "Время напоминаний:", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-
-                    // Обед
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Обед: $lunchHour:00",
-                            fontSize = 19.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            BigButton(
-                                text = "➖ 1 ч",
-                                onClick = { viewModel.adjustLunchHour(-1) },
-                                color = Color.LightGray
-                            )
-                            BigButton(
-                                text = "➕ 1 ч",
-                                onClick = { viewModel.adjustLunchHour(1) },
-                                color = AccentBlue
-                            )
-                        }
-                    }
-
-                    // Ужин
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Ужин: $dinnerHour:00",
-                            fontSize = 19.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            BigButton(
-                                text = "➖ 1 ч",
-                                onClick = { viewModel.adjustDinnerHour(-1) },
-                                color = Color.LightGray
-                            )
-                            BigButton(
-                                text = "➕ 1 ч",
-                                onClick = { viewModel.adjustDinnerHour(1) },
-                                color = AccentBlue
-                            )
-                        }
-                    }
                 }
             }
         }
@@ -436,10 +384,15 @@ fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewMode
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Text(text = "Приблизительная норма:", fontSize = 20.sp)
                     Text(
-                        text = "${preview.kcal} ккал в день",
-                        fontSize = 28.sp,
+                        text = "Ваш базовый метаболизм: ${preview.bmr} ккал",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AccentBlue
+                    )
+                    Text(
+                        text = "Суточная норма: ${preview.kcal} ккал в день",
+                        fontSize = 26.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
@@ -453,193 +406,18 @@ fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewMode
         ErrorText(errorMessage)
         BigButton(text = "РАССЧИТАТЬ И СОХРАНИТЬ", onClick = viewModel::save)
 
-        SectionTitle(text = "Резервная копия данных")
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftGray),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    text = "Сохранение и перенос",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Сохраните всю историю питания, веса и продуктов в один файл. Его можно отправить детям в Telegram или восстановить при смене телефона.",
-                    fontSize = 16.sp,
-                    color = Color.DarkGray
-                )
-
-                if (isBackupBusy) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CircularProgressIndicator(modifier = Modifier.height(24.dp), strokeWidth = 3.dp)
-                        Spacer(modifier = Modifier.padding(horizontal = 8.dp))
-                        Text(text = "Обработка копии...", fontSize = 18.sp)
-                    }
-                } else {
-                    BigButton(
-                        text = "📤 ПОДЕЛИТЬСЯ РЕЗЕРВНОЙ КОПИЕЙ",
-                        onClick = {
-                            scope.launch {
-                                val json = viewModel.getBackupJson()
-                                val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                                    type = "application/json"
-                                    putExtra(Intent.EXTRA_SUBJECT, "Резервная копия КБЖУ для старших")
-                                    putExtra(Intent.EXTRA_TEXT, json)
-                                }
-                                context.startActivity(Intent.createChooser(sendIntent, "Сохранить резервную копию"))
-                            }
-                        },
-                        color = AccentBlue
-                    )
-
-                    OutlineBigButton(
-                        text = "📥 ВОССТАНОВИТЬ ИЗ ФАЙЛА",
-                        onClick = {
-                            try {
-                                restoreFileLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
-                            } catch (_: Exception) {}
-                        }
-                    )
-                }
-
-                backupStatus?.let { status ->
-                    Card(
-                        shape = RoundedCornerShape(8.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = status,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = Color(0xFF1B5E20),
-                            modifier = Modifier.padding(10.dp)
-                        )
-                    }
-                }
-            }
-        }
-
-        SectionTitle(text = "Обратная связь и пожелания")
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftGray),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    text = "✉️ Чего вам не хватает в приложении?",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Напишите, каких продуктов, блюд или функций вам не хватает в приложении. Нажмите кнопку, чтобы отправить письмо напрямую разработчику.",
-                    fontSize = 16.sp,
-                    color = Color.DarkGray
-                )
-                OutlinedTextField(
-                    value = feedbackText,
-                    onValueChange = { viewModel.feedbackText.value = it },
-                    placeholder = { Text("Напишите ваше пожелание...", fontSize = 18.sp) },
-                    modifier = Modifier.fillMaxWidth().height(120.dp),
-                    textStyle = LocalTextStyle.current.copy(fontSize = 18.sp),
-                    shape = RoundedCornerShape(8.dp)
-                )
-                BigButton(
-                    text = "📨 ОТПРАВИТЬ РАЗРАБОТЧИКУ",
-                    onClick = {
-                        val body = feedbackText.trim()
-                        val sendIntent = Intent(Intent.ACTION_SENDTO).apply {
-                            data = Uri.parse("mailto:kudrluba2003@gmail.com")
-                            putExtra(Intent.EXTRA_SUBJECT, "НОВОВВЕДЕНИЕ ПО ПРОСЬБЕ ПОЛЬЗОВАТЕЛЯ")
-                            putExtra(
-                                Intent.EXTRA_TEXT,
-                                "${if (body.isNotBlank()) body else "(Пользователь не указал текст)"}\n\n---\nПриложение: Дневник питания v${BuildConfig.VERSION_NAME} (сборка ${BuildConfig.VERSION_CODE})\nAndroid: ${Build.VERSION.RELEASE}"
-                            )
-                        }
-                        try {
-                            context.startActivity(Intent.createChooser(sendIntent, "Отправить письмо"))
-                        } catch (_: Exception) {}
-                    },
-                    color = AccentGreen
-                )
-            }
-        }
-
-        SectionTitle(text = "Обновление приложения")
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftGray),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(
-                    text = "Текущая версия: ${BuildConfig.VERSION_NAME} (сборка ${BuildConfig.VERSION_CODE})",
-                    fontSize = 18.sp,
-                    color = Color.DarkGray
-                )
-
-                availableUpdate?.let { update ->
-                    Card(
-                        shape = RoundedCornerShape(10.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD)),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text(
-                                text = "🎉 Доступна новая версия: ${update.tagName}",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = AccentBlue
-                            )
-                            if (update.releaseNotes.isNotBlank()) {
-                                Text(
-                                    text = update.releaseNotes,
-                                    fontSize = 16.sp
-                                )
-                            }
-                            BigButton(
-                                text = "СКАЧАТЬ ОБНОВЛЕНИЕ",
-                                onClick = {
-                                    val targetUrl = update.apkDownloadUrl ?: update.releaseUrl
-                                    val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(targetUrl))
-                                    context.startActivity(browserIntent)
-                                },
-                                color = AccentGreen
-                            )
-                        }
-                    }
-                }
-
-                if (isCheckingUpdate) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CircularProgressIndicator(modifier = Modifier.height(24.dp), strokeWidth = 3.dp)
-                        Spacer(modifier = Modifier.padding(horizontal = 8.dp))
-                        Text(text = "Проверяем наличие обновлений...", fontSize = 17.sp)
-                    }
-                } else {
-                    updateCheckMessage?.let { msg ->
-                        Text(text = msg, fontSize = 16.sp, color = Color.DarkGray)
-                    }
-
-                    OutlineBigButton(
-                        text = "🔄 ПРОВЕРИТЬ ОБНОВЛЕНИЯ",
-                        onClick = viewModel::checkForUpdates
-                    )
-                }
-            }
-        }
-
         Spacer(modifier = Modifier.height(24.dp))
     }
+}
+
+private fun formatAgeString(years: Int): String {
+    val mod10 = years % 10
+    val mod100 = years % 100
+    val word = when {
+        mod100 in 11..19 -> "лет"
+        mod10 == 1 -> "год"
+        mod10 in 2..4 -> "года"
+        else -> "лет"
+    }
+    return "$years $word"
 }

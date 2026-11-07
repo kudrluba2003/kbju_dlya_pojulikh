@@ -26,10 +26,10 @@ class MealReminderWorker(
         }
 
         val targetHour = inputData.getInt(KEY_TARGET_HOUR, 13)
-        val (title, text) = if (targetHour < 16) {
-            "Дневник питания" to "Не забудьте записать ваш обед 🍲"
-        } else {
-            "Дневник питания" to "Время ужина! Записали, что съели? 🥣"
+        val (title, text) = when {
+            targetHour < 11 -> "Дневник питания" to "Доброе утро! Не забудьте записать завтрак 🥞"
+            targetHour < 16 -> "Дневник питания" to "Не забудьте записать ваш обед 🍲"
+            else -> "Дневник питания" to "Время ужина! Записали, что съели? 🥣"
         }
 
         showNotification(title, text)

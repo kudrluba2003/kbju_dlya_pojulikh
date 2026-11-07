@@ -5,7 +5,7 @@ import kotlin.math.roundToInt
 
 data class Nutrients(val kcal: Double, val protein: Double, val fat: Double, val carbs: Double)
 
-data class DailyTargets(val kcal: Int, val protein: Int, val fat: Int, val carbs: Int)
+data class DailyTargets(val kcal: Int, val protein: Int, val fat: Int, val carbs: Int, val bmr: Int = 0)
 
 object NutritionMath {
 
@@ -26,14 +26,16 @@ object NutritionMath {
         activityFactor: Double,
         goalPercent: Int
     ): DailyTargets {
-        val maintenance = basalMetabolism(weightKg, heightCm, age, gender) * activityFactor
+        val bmr = basalMetabolism(weightKg, heightCm, age, gender)
+        val maintenance = bmr * activityFactor
         val withGoal = maintenance * (1.0 + goalPercent / 100.0)
         val kcal = maxOf(withGoal, MIN_DAILY_KCAL.toDouble()).roundToInt()
         return DailyTargets(
             kcal = kcal,
             protein = (kcal * 0.25 / 4.0).roundToInt(),
             fat = (kcal * 0.30 / 9.0).roundToInt(),
-            carbs = (kcal * 0.45 / 4.0).roundToInt()
+            carbs = (kcal * 0.45 / 4.0).roundToInt(),
+            bmr = bmr.roundToInt()
         )
     }
 

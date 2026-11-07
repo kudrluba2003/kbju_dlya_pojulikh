@@ -20,6 +20,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+import java.time.LocalDate
+import java.time.Period
+
 class ProfileViewModel(app: Application) : AndroidViewModel(app) {
 
     private val userPreferences = (app as KbjuApp).userPreferencesRepository
@@ -30,6 +33,7 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
     val targetWeight = MutableStateFlow("")
     val targetWaterGlasses = MutableStateFlow(6)
     val age = MutableStateFlow("")
+    val birthDateEpochDay = MutableStateFlow<Long?>(null)
     val gender = MutableStateFlow<Gender?>(null)
     val activityLevel = MutableStateFlow<ActivityLevel?>(null)
     val goal = MutableStateFlow<Goal?>(null)
@@ -44,12 +48,14 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
     val isCheckingUpdate = MutableStateFlow(false)
     val updateCheckMessage = MutableStateFlow<String?>(null)
 
+    val breakfastHour = MutableStateFlow(9)
+    val breakfastMinute = MutableStateFlow(0)
     val lunchHour = MutableStateFlow(13)
     val lunchMinute = MutableStateFlow(0)
     val dinnerHour = MutableStateFlow(19)
     val dinnerMinute = MutableStateFlow(0)
+    val manualWaterMl = MutableStateFlow("")
     val waterCalcExplanation = MutableStateFlow<String?>(null)
-    val feedbackText = MutableStateFlow("")
 
     private data class ParsedInputs(
         val heightCm: Int,
@@ -64,6 +70,9 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             crashReport.value = CrashHandler.getLastCrashReport(getApplication())
             remindersEnabled.value = userPreferences.remindersEnabled.first()
+            val (bHour, bMin) = userPreferences.breakfastReminderTime.first()
+            breakfastHour.value = bHour
+            breakfastMinute.value = bMin
             val (lHour, lMin) = userPreferences.lunchReminderTime.first()
             lunchHour.value = lHour
             lunchMinute.value = lMin
@@ -78,7 +87,14 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
                 startWeight.value = existing.startWeightKg.pretty()
                 targetWeight.value = existing.targetWeightKg.pretty()
                 targetWaterGlasses.value = existing.targetWaterGlasses
-                age.value = existing.age.toString()
+                birthDateEpochDay.value = existing.birthDateEpochDay
+                if (existing.birthDateEpochDay != null) {
+                    val bDate = LocalDate.ofEpochDay(existing.birthDateEpochDay)
+                    val calcAge = Period.between(bDate, LocalDate.now()).years
+                    age.value = calcAge.toString()
+                } else {
+                    age.value = existing.age.toString()
+                }
                 gender.value = existing.gender
                 activityLevel.value = ActivityLevel.entries.firstOrNull { it.factor == existing.activityFactor }
                 goal.value = Goal.entries.firstOrNull { it.percent == existing.goalPercent }
@@ -181,6 +197,8 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
             if (enabled) {
                 MealReminderScheduler.scheduleAll(
                     getApplication(),
+                    breakfastHour = breakfastHour.value,
+                    breakfastMinute = breakfastMinute.value,
                     lunchHour = lunchHour.value,
                     lunchMinute = lunchMinute.value,
                     dinnerHour = dinnerHour.value,
@@ -192,6 +210,12 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun adjustBreakfastHour(delta: Int) {
+        val newHour = (breakfastHour.value + delta).coerceIn(6, 12)
+        breakfastHour.value = newHour
+        persistReminderTimes()
+    }
+
     fun adjustLunchHour(delta: Int) {
         val newHour = (lunchHour.value + delta).coerceIn(10, 16)
         lunchHour.value = newHour
@@ -199,7 +223,7 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun adjustDinnerHour(delta: Int) {
-        val newHour = (dinnerHour.value + delta).coerceIn(16, 22)
+        val newHour = (dinnerHour.value + delta).coerceIn(16, 23)
         dinnerHour.value = newHour
         persistReminderTimes()
     }
@@ -207,6 +231,8 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
     private fun persistReminderTimes() {
         viewModelScope.launch {
             userPreferences.saveReminderTimes(
+                breakfastHour.value,
+                breakfastMinute.value,
                 lunchHour.value,
                 lunchMinute.value,
                 dinnerHour.value,
@@ -215,6 +241,8 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
             if (remindersEnabled.value) {
                 MealReminderScheduler.scheduleAll(
                     getApplication(),
+                    breakfastHour = breakfastHour.value,
+                    breakfastMinute = breakfastMinute.value,
                     lunchHour = lunchHour.value,
                     lunchMinute = lunchMinute.value,
                     dinnerHour = dinnerHour.value,
@@ -231,9 +259,22 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
             return
         }
         val ml = kotlin.math.round((w * 30.0)).toInt()
-        val glasses = (ml / 250.0).let { kotlin.math.round(it).toInt() }.coerceIn(4, 16)
+        val glasses = (ml / 250.0).let { kotlin.math.round(it).toInt() }.coerceIn(2, 20)
         targetWaterGlasses.value = glasses
-        waterCalcExplanation.value = "По весу ${w.pretty()} кг норма: ~${ml} мл (${glasses} стаканов по 250 мл)"
+        manualWaterMl.value = ml.toString()
+        waterCalcExplanation.value = "По весу ${w.pretty()} кг норма: ~${ml} мл (${glasses} стаканов по 250 мл). Применено!"
+        viewModelScope.launch {
+            userPreferences.updateTargetWater(glasses)
+        }
+    }
+
+    fun applyManualWaterMl(ml: Int) {
+        val glasses = (ml / 250.0).let { kotlin.math.round(it).toInt() }.coerceIn(2, 20)
+        targetWaterGlasses.value = glasses
+        waterCalcExplanation.value = "Норма сохранена: ${ml} мл (~${glasses} стаканов по 250 мл)"
+        viewModelScope.launch {
+            userPreferences.updateTargetWater(glasses)
+        }
     }
 
     // Расчёт суточной нормы КБЖУ по формуле Миффлина-Сан Жеора:
@@ -250,6 +291,13 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
                 goalPercent = it.goal.percent
             )
         }
+
+    fun setBirthDate(epochDay: Long) {
+        birthDateEpochDay.value = epochDay
+        val bDate = LocalDate.ofEpochDay(epochDay)
+        val calculatedYears = Period.between(bDate, LocalDate.now()).years
+        age.value = calculatedYears.coerceIn(1, 125).toString()
+    }
 
     fun save() {
         viewModelScope.launch {
@@ -270,7 +318,8 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
                     goalPercent = valid.goal.percent,
                     startWeightKg = startKg,
                     targetWeightKg = targetKg,
-                    targetWaterGlasses = waterGlasses
+                    targetWaterGlasses = waterGlasses,
+                    birthDateEpochDay = birthDateEpochDay.value
                 )
             )
             saved.value = true

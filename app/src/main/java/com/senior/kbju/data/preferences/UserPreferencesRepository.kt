@@ -28,10 +28,19 @@ class UserPreferencesRepository(private val context: Context) {
         val START_WEIGHT_KG = doublePreferencesKey("start_weight_kg")
         val TARGET_WEIGHT_KG = doublePreferencesKey("target_weight_kg")
         val TARGET_WATER_GLASSES = intPreferencesKey("target_water_glasses")
+        val BIRTH_DATE_EPOCH_DAY = androidx.datastore.preferences.core.longPreferencesKey("birth_date_epoch_day")
+        val BREAKFAST_REMINDER_HOUR = intPreferencesKey("breakfast_reminder_hour")
+        val BREAKFAST_REMINDER_MINUTE = intPreferencesKey("breakfast_reminder_minute")
         val LUNCH_REMINDER_HOUR = intPreferencesKey("lunch_reminder_hour")
         val LUNCH_REMINDER_MINUTE = intPreferencesKey("lunch_reminder_minute")
         val DINNER_REMINDER_HOUR = intPreferencesKey("dinner_reminder_hour")
         val DINNER_REMINDER_MINUTE = intPreferencesKey("dinner_reminder_minute")
+    }
+
+    val breakfastReminderTime: Flow<Pair<Int, Int>> = context.userSettings.data.map { prefs ->
+        val hour = prefs[Keys.BREAKFAST_REMINDER_HOUR] ?: 9
+        val min = prefs[Keys.BREAKFAST_REMINDER_MINUTE] ?: 0
+        hour to min
     }
 
     val lunchReminderTime: Flow<Pair<Int, Int>> = context.userSettings.data.map { prefs ->
@@ -46,8 +55,14 @@ class UserPreferencesRepository(private val context: Context) {
         hour to min
     }
 
-    suspend fun saveReminderTimes(lunchHour: Int, lunchMin: Int, dinnerHour: Int, dinnerMin: Int) {
+    suspend fun saveReminderTimes(
+        breakfastHour: Int, breakfastMin: Int,
+        lunchHour: Int, lunchMin: Int,
+        dinnerHour: Int, dinnerMin: Int
+    ) {
         context.userSettings.edit { prefs ->
+            prefs[Keys.BREAKFAST_REMINDER_HOUR] = breakfastHour
+            prefs[Keys.BREAKFAST_REMINDER_MINUTE] = breakfastMin
             prefs[Keys.LUNCH_REMINDER_HOUR] = lunchHour
             prefs[Keys.LUNCH_REMINDER_MINUTE] = lunchMin
             prefs[Keys.DINNER_REMINDER_HOUR] = dinnerHour
@@ -74,6 +89,7 @@ class UserPreferencesRepository(private val context: Context) {
         val startWeightKg = prefs[Keys.START_WEIGHT_KG] ?: weightKg
         val targetWeightKg = prefs[Keys.TARGET_WEIGHT_KG] ?: weightKg
         val targetWaterGlasses = prefs[Keys.TARGET_WATER_GLASSES] ?: 6
+        val birthDateEpochDay = prefs[Keys.BIRTH_DATE_EPOCH_DAY]
         UserProfile(
             heightCm = heightCm,
             weightKg = weightKg,
@@ -83,7 +99,8 @@ class UserPreferencesRepository(private val context: Context) {
             goalPercent = goalPercent,
             startWeightKg = startWeightKg,
             targetWeightKg = targetWeightKg,
-            targetWaterGlasses = targetWaterGlasses
+            targetWaterGlasses = targetWaterGlasses,
+            birthDateEpochDay = birthDateEpochDay
         )
     }
 
@@ -91,13 +108,18 @@ class UserPreferencesRepository(private val context: Context) {
         context.userSettings.edit { prefs ->
             prefs[Keys.HEIGHT_CM] = profile.heightCm
             prefs[Keys.WEIGHT_KG] = profile.weightKg
-            prefs[Keys.AGE] = profile.age
+            prefs[Keys.AGE] = profile.currentAge
             prefs[Keys.GENDER] = profile.gender.name
             prefs[Keys.ACTIVITY_FACTOR] = profile.activityFactor
             prefs[Keys.GOAL_PERCENT] = profile.goalPercent
             prefs[Keys.START_WEIGHT_KG] = profile.startWeightKg
             prefs[Keys.TARGET_WEIGHT_KG] = profile.targetWeightKg
             prefs[Keys.TARGET_WATER_GLASSES] = profile.targetWaterGlasses
+            if (profile.birthDateEpochDay != null) {
+                prefs[Keys.BIRTH_DATE_EPOCH_DAY] = profile.birthDateEpochDay
+            } else {
+                prefs.remove(Keys.BIRTH_DATE_EPOCH_DAY)
+            }
         }
     }
 

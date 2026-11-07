@@ -1,9 +1,6 @@
 package com.senior.kbju.ui.screens
 
-import android.content.Intent
-import android.net.Uri
-import com.senior.kbju.BuildConfig
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,25 +17,22 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.LocalTextStyle
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.senior.kbju.ui.components.BigButton
-import com.senior.kbju.ui.components.OutlineBigButton
 import com.senior.kbju.ui.components.RingProgress
 import com.senior.kbju.ui.theme.AccentBlue
 import com.senior.kbju.ui.theme.AccentGreen
@@ -55,10 +49,6 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
-    val availableUpdate by viewModel.availableUpdate.collectAsState()
-    val isCheckingUpdate by viewModel.isCheckingUpdate.collectAsState()
-    val updateCheckMessage by viewModel.updateCheckMessage.collectAsState()
-    val context = LocalContext.current
 
     if (state.isLoading || state.profile == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -67,9 +57,25 @@ fun DashboardScreen(
         return
     }
 
-    val dateText = remember(state.dateEpochDay) {
+    val context = LocalContext.current
+    val localDate = remember(state.dateEpochDay) {
         LocalDate.ofEpochDay(state.dateEpochDay)
-            .format(DateTimeFormatter.ofPattern("d MMMM", Locale("ru")))
+    }
+    val dateText = remember(state.dateEpochDay) {
+        localDate.format(DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("ru")))
+    }
+
+    fun showDatePicker() {
+        android.app.DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                val picked = LocalDate.of(year, month + 1, dayOfMonth)
+                viewModel.selectDate(picked.toEpochDay())
+            },
+            localDate.year,
+            localDate.monthValue - 1,
+            localDate.dayOfMonth
+        ).show()
     }
 
     val progress = if (state.targetKcal > 0) {
@@ -81,8 +87,8 @@ fun DashboardScreen(
     val isExceeded = state.eatenKcal > state.targetKcal + 100
     val ringColor = if (isExceeded) AccentOrange else AccentGreen
 
-    // Дефицит за день: съедено - сожжено
-    val netCalories = state.eatenKcal - state.burnedKcal
+    // Дефицит за день: съедено минус всего сожжено (базовый метаболизм + активность)
+    val netCalories = state.netCalories
 
     Column(
         modifier = Modifier
@@ -91,43 +97,70 @@ fun DashboardScreen(
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Баннер доступного обновления
-        availableUpdate?.let { update ->
-            Card(
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
-                modifier = Modifier.fillMaxWidth()
+        // Переключатель дней с календариком
+        Card(
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = SoftGray),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "🎉 Доступно обновление v${update.tagName}!",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = AccentGreen
-                    )
-                    Text(
-                        text = "Новая версия с улучшениями готова к установке.",
-                        fontSize = 16.sp
-                    )
-                    BigButton(
-                        text = "📥 СКАЧАТЬ И ОБНОВИТЬ",
-                        onClick = {
-                            val url = update.apkDownloadUrl ?: update.releaseUrl
-                            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                            context.startActivity(browserIntent)
-                        },
-                        color = AccentGreen
-                    )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = { viewModel.shiftDay(-1) },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Text("◀", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = AccentBlue)
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .clickable { showDatePicker() }
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text("📅", fontSize = 28.sp)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = if (state.isToday) "Сегодня" else dateText,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = if (state.isToday) dateText else "нажмите для выбора даты",
+                                fontSize = 14.sp,
+                                color = Color.DarkGray
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = { viewModel.shiftDay(1) },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Text("▶", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = AccentBlue)
+                    }
+                }
+
+                if (!state.isToday) {
+                    TextButton(
+                        onClick = { viewModel.selectToday() },
+                        modifier = Modifier.padding(top = 2.dp)
+                    ) {
+                        Text("« Вернуться на сегодня", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = AccentBlue)
+                    }
                 }
             }
         }
-
-        // Дата
-        Text(
-            text = "Сегодня, $dateText",
-            fontSize = 26.sp,
-            fontWeight = FontWeight.Bold
-        )
 
         // Кольцо калорий
         RingProgress(
@@ -162,6 +195,7 @@ fun DashboardScreen(
             StatCard(
                 title = "Сожжено",
                 value = "${state.burnedKcal} ккал",
+                subtitle = if (state.activityBurnedKcal > 0) "базовый ${state.basalMetabolismKcal} + активность ${state.activityBurnedKcal}" else "базовый метаболизм",
                 modifier = Modifier.weight(1f),
                 valueColor = AccentOrange
             )
@@ -173,7 +207,41 @@ fun DashboardScreen(
             )
         }
 
-        // Плашка: Дефицит за день (съедено - сожжено)
+        // Карточка: Ваш базовый метаболизм (авто-пересчет по весу)
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = SoftGray),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Ваш базовый метаболизм",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Энергия на дыхание и работу организма при вашем весе ${state.currentWeightKg} кг",
+                        fontSize = 15.sp,
+                        color = Color.DarkGray
+                    )
+                }
+                Text(
+                    text = "${state.basalMetabolismKcal} ккал",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = AccentBlue
+                )
+            }
+        }
+
+        // Плашка: Дефицит за день (без надписи съедено-сожжено)
         Card(
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(containerColor = SoftGray),
@@ -192,107 +260,25 @@ fun DashboardScreen(
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(
-                        text = "(съедено − сожжено)",
-                        fontSize = 16.sp,
-                        color = Color.DarkGray
-                    )
                 }
                 Text(
                     text = "$netCalories ккал",
                     fontSize = 26.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (netCalories <= state.targetKcal) AccentGreen else AccentOrange
+                    color = if (netCalories <= 0) AccentGreen else AccentOrange
                 )
             }
         }
 
-        // Карточка проверки обновлений на главной
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftGray),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(text = "Приложение v${BuildConfig.VERSION_NAME}", fontSize = 16.sp, color = Color.DarkGray)
-                    if (isCheckingUpdate) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                    }
-                }
-                OutlineBigButton(
-                    text = "🔄 ПРОВЕРИТЬ ОБНОВЛЕНИЯ",
-                    onClick = { viewModel.checkForUpdates(silent = false) }
-                )
-                updateCheckMessage?.let { msg ->
-                    Text(
-                        text = msg,
-                        fontSize = 16.sp,
-                        color = AccentBlue,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-        }
-
-        // Оставить отзыв / предложить функцию
-        var feedbackInput by remember { mutableStateOf("") }
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftGray),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "✉️ Оставить отзыв разработчику",
-                    fontSize = 19.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Напишите, каких продуктов или функций вам не хватает в приложении:",
-                    fontSize = 15.sp,
-                    color = Color.DarkGray
-                )
-                OutlinedTextField(
-                    value = feedbackInput,
-                    onValueChange = { feedbackInput = it },
-                    placeholder = { Text("Напишите ваше пожелание...", fontSize = 16.sp) },
-                    modifier = Modifier.fillMaxWidth().height(100.dp),
-                    textStyle = LocalTextStyle.current.copy(fontSize = 17.sp),
-                    shape = RoundedCornerShape(8.dp)
-                )
-                BigButton(
-                    text = "📨 ОТПРАВИТЬ ОТЗЫВ",
-                    onClick = {
-                        val body = feedbackInput.trim()
-                        val sendIntent = Intent(Intent.ACTION_SENDTO).apply {
-                            data = Uri.parse("mailto:kudrluba2003@gmail.com")
-                            putExtra(Intent.EXTRA_SUBJECT, "НОВОВВЕДЕНИЕ ПО ПРОСЬБЕ ПОЛЬЗОВАТЕЛЯ")
-                            putExtra(
-                                Intent.EXTRA_TEXT,
-                                "${if (body.isNotBlank()) body else "(Пользователь не указал текст)"}\n\n---\nПриложение: Дневник питания v${BuildConfig.VERSION_NAME} (сборка ${BuildConfig.VERSION_CODE})\nAndroid: ${android.os.Build.VERSION.RELEASE}"
-                            )
-                        }
-                        try {
-                            context.startActivity(Intent.createChooser(sendIntent, "Отправить отзыв"))
-                        } catch (_: Exception) {}
-                    },
-                    color = AccentGreen
-                )
-            }
-        }
-
-        // Кнопка изменить профиль
-        TextButton(
+        // Крупная кнопка "Мой профиль"
+        BigButton(
+            text = "👤 МОЙ ПРОФИЛЬ",
             onClick = onEditProfile,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
-        ) {
-            Text(text = "⚙️ Изменить профиль и настройки", fontSize = 18.sp, color = Color.DarkGray)
-        }
+            color = Color(0xFF37474F),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp)
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
     }
@@ -302,6 +288,7 @@ fun DashboardScreen(
 private fun StatCard(
     title: String,
     value: String,
+    subtitle: String? = null,
     modifier: Modifier = Modifier,
     valueColor: Color = Color.Black
 ) {
@@ -324,6 +311,14 @@ private fun StatCard(
                 color = valueColor,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    fontSize = 13.sp,
+                    color = Color.DarkGray,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                )
+            }
         }
     }
 }
