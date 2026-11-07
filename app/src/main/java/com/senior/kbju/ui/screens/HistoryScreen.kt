@@ -88,7 +88,7 @@ fun HistoryScreen(onBack: () -> Unit, viewModel: HistoryViewModel = viewModel())
                     HistoryDayCard(day)
                 }
                 item {
-                    OutlineBigButton(text = "НА ГОЛОВНУЮ", onClick = onBack)
+                    OutlineBigButton(text = "НА ГЛАВНУЮ", onClick = onBack)
                 }
             }
         }

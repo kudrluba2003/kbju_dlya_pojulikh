@@ -49,6 +49,7 @@ import com.senior.kbju.ui.theme.AccentBlue
 import com.senior.kbju.ui.theme.AccentGreen
 import com.senior.kbju.ui.theme.ErrorRed
 import com.senior.kbju.ui.theme.SoftGray
+import com.senior.kbju.utils.pretty
 import com.senior.kbju.viewmodel.ProfileViewModel
 import kotlinx.coroutines.launch
 
@@ -56,6 +57,9 @@ import kotlinx.coroutines.launch
 fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewModel()) {
     val height by viewModel.height.collectAsState()
     val weight by viewModel.weight.collectAsState()
+    val startWeight by viewModel.startWeight.collectAsState()
+    val targetWeight by viewModel.targetWeight.collectAsState()
+    val targetWaterGlasses by viewModel.targetWaterGlasses.collectAsState()
     val age by viewModel.age.collectAsState()
     val gender by viewModel.gender.collectAsState()
     val activityLevel by viewModel.activityLevel.collectAsState()
@@ -160,11 +164,49 @@ fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewMode
             suffix = "см"
         )
         NumberField(
-            label = "Вес",
+            label = "Текущий вес",
             value = weight,
-            onValueChange = { viewModel.weight.value = it },
+            onValueChange = viewModel::onWeightChanged,
             suffix = "кг"
         )
+        NumberField(
+            label = "Исходный вес (с какого начали)",
+            value = startWeight,
+            onValueChange = { viewModel.startWeight.value = it },
+            suffix = "кг"
+        )
+        NumberField(
+            label = "Желаемый вес (цель)",
+            value = targetWeight,
+            onValueChange = { viewModel.targetWeight.value = it },
+            suffix = "кг"
+        )
+
+        // Подсказка разницы до цели
+        val curW = com.senior.kbju.utils.parseNumberIn(weight, 25.0, 300.0)
+        val tgtW = com.senior.kbju.utils.parseNumberIn(targetWeight, 25.0, 300.0)
+        if (curW != null && tgtW != null) {
+            val diff = curW - tgtW
+            val goalMsg = when {
+                kotlin.math.abs(diff) < 0.2 -> "🎉 Текущий вес совпадает с желаемым!"
+                diff > 0 -> "🎯 До цели осталось сбросить: ${diff.pretty()} кг"
+                else -> "🎯 До цели осталось набрать: ${(-diff).pretty()} кг"
+            }
+            Card(
+                shape = RoundedCornerShape(10.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = goalMsg,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = AccentBlue,
+                    modifier = Modifier.padding(12.dp)
+                )
+            }
+        }
+
         NumberField(
             label = "Возраст",
             value = age,
@@ -202,8 +244,63 @@ fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewMode
             BigToggleButton(
                 text = goalItem.label,
                 selected = goal == goalItem,
-                onClick = { viewModel.goal.value = goalItem }
+                onClick = { viewModel.selectGoal(goalItem) }
             )
+        }
+
+        SectionTitle(text = "Норма воды в день")
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = SoftGray)
+        ) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "Сколько пить в день:", fontSize = 19.sp)
+                    Text(
+                        text = "$targetWaterGlasses ст. (${targetWaterGlasses * 250} мл)",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AccentBlue
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    BigButton(
+                        text = "➖ 1 стакан",
+                        onClick = { viewModel.setTargetWater(targetWaterGlasses - 1) },
+                        modifier = Modifier.weight(1f),
+                        color = Color.LightGray
+                    )
+                    BigButton(
+                        text = "➕ 1 стакан",
+                        onClick = { viewModel.setTargetWater(targetWaterGlasses + 1) },
+                        modifier = Modifier.weight(1f),
+                        color = AccentBlue
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(4 to "1 л", 6 to "1.5 л", 8 to "2 л").forEach { (glasses, label) ->
+                        BigToggleButton(
+                            text = "$glasses ст. ($label)",
+                            selected = targetWaterGlasses == glasses,
+                            onClick = { viewModel.setTargetWater(glasses) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
         }
 
         SectionTitle(text = "Напоминания")

@@ -39,7 +39,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import com.senior.kbju.utils.ImageUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -303,35 +308,47 @@ private fun LabelContent(viewModel: AddFoodViewModel) {
     val error by viewModel.labelError.collectAsState()
     val ocrStatus by viewModel.ocrStatus.collectAsState()
     var isProcessingOcr by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     val haptic = LocalHapticFeedback.current
 
-    // Создаём временный файл в кеше для снимка с камеры
+    // Стабильный файл для снимка с камеры (перезаписывается при каждом фото)
+    val photoFile = remember { File(context.cacheDir, "camera_label_photo.jpg") }
     val photoUri = remember {
-        val cacheFile = File(context.cacheDir, "camera_label_${System.currentTimeMillis()}.jpg")
         FileProvider.getUriForFile(
             context,
             "${context.packageName}.fileprovider",
-            cacheFile
+            photoFile
         )
     }
 
     fun processOcrImage(uri: Uri) {
         isProcessingOcr = true
-        try {
-            val image = InputImage.fromFilePath(context, uri)
-            val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-            recognizer.process(image)
-                .addOnSuccessListener { visionText ->
-                    isProcessingOcr = false
-                    viewModel.onOcrTextRecognized(visionText.text)
+        scope.launch(Dispatchers.Default) {
+            try {
+                // Масштабируем фото и исправляем поворот по EXIF во избежание OOM и сбоев распознавания
+                val scaledBitmap = ImageUtils.loadRotatedScaledBitmap(context, uri)
+                val image = if (scaledBitmap != null) {
+                    InputImage.fromBitmap(scaledBitmap, 0)
+                } else {
+                    InputImage.fromFilePath(context, uri)
                 }
-                .addOnFailureListener { e ->
+
+                val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
+                recognizer.process(image)
+                    .addOnSuccessListener { visionText ->
+                        isProcessingOcr = false
+                        viewModel.onOcrTextRecognized(visionText.text)
+                    }
+                    .addOnFailureListener { e ->
+                        isProcessingOcr = false
+                        viewModel.onOcrFailure("Не удалось прочитать текст: ${e.localizedMessage ?: "ошибка фото"}")
+                    }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
                     isProcessingOcr = false
-                    viewModel.onOcrFailure("Не удалось прочитать текст: ${e.localizedMessage ?: "ошибка фото"}")
+                    viewModel.onOcrFailure("Не удалось открыть изображение")
                 }
-        } catch (e: Exception) {
-            isProcessingOcr = false
-            viewModel.onOcrFailure("Не удалось открыть изображение")
+            }
         }
     }
 
@@ -383,8 +400,12 @@ private fun LabelContent(viewModel: AddFoodViewModel) {
                     text = "📷 СФОТОГРАФИРОВАТЬ",
                     onClick = {
                         try {
+                            if (photoFile.exists()) photoFile.delete()
+                            photoFile.createNewFile()
                             cameraLauncher.launch(photoUri)
-                        } catch (_: Exception) {}
+                        } catch (e: Exception) {
+                            viewModel.onOcrFailure("Камера недоступна: ${e.localizedMessage}")
+                        }
                     },
                     color = AccentBlue
                 )
@@ -699,6 +720,6 @@ private fun DoneContent(viewModel: AddFoodViewModel, onFinished: () -> Unit) {
             textAlign = androidx.compose.ui.text.style.TextAlign.Center
         )
         Spacer(modifier = Modifier.height(12.dp))
-        BigButton(text = "НА ГОЛОВНУЮ", onClick = onFinished, color = AccentGreen)
+        BigButton(text = "НА ГЛАВНУЮ", onClick = onFinished, color = AccentGreen)
     }
 }

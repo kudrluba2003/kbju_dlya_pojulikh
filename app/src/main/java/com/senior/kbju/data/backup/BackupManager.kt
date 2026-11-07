@@ -49,6 +49,9 @@ class BackupManager(
                 put("gender", profile.gender.name)
                 put("activityFactor", profile.activityFactor)
                 put("goalPercent", profile.goalPercent)
+                put("startWeightKg", profile.startWeightKg)
+                put("targetWeightKg", profile.targetWeightKg)
+                put("targetWaterGlasses", profile.targetWaterGlasses)
             }
             root.put("profile", profileObj)
         }
@@ -126,13 +129,17 @@ class BackupManager(
         if (root.has("profile")) {
             val p = root.getJSONObject("profile")
             val gender = Gender.entries.firstOrNull { it.name == p.optString("gender") } ?: Gender.FEMALE
+            val weight = p.optDouble("weightKg", 70.0)
             val profile = UserProfile(
                 heightCm = p.optInt("heightCm", 165),
-                weightKg = p.optDouble("weightKg", 70.0),
+                weightKg = weight,
                 age = p.optInt("age", 65),
                 gender = gender,
                 activityFactor = p.optDouble("activityFactor", 1.2),
-                goalPercent = p.optInt("goalPercent", 0)
+                goalPercent = p.optInt("goalPercent", 0),
+                startWeightKg = p.optDouble("startWeightKg", weight),
+                targetWeightKg = p.optDouble("targetWeightKg", weight),
+                targetWaterGlasses = p.optInt("targetWaterGlasses", 6)
             )
             preferencesRepository.save(profile)
             profileRestored = true

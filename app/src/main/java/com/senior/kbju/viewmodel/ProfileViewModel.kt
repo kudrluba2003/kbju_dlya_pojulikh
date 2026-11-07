@@ -26,6 +26,9 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
 
     val height = MutableStateFlow("")
     val weight = MutableStateFlow("")
+    val startWeight = MutableStateFlow("")
+    val targetWeight = MutableStateFlow("")
+    val targetWaterGlasses = MutableStateFlow(6)
     val age = MutableStateFlow("")
     val gender = MutableStateFlow<Gender?>(null)
     val activityLevel = MutableStateFlow<ActivityLevel?>(null)
@@ -59,6 +62,9 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
                 isEditing.value = true
                 height.value = existing.heightCm.toString()
                 weight.value = existing.weightKg.pretty()
+                startWeight.value = existing.startWeightKg.pretty()
+                targetWeight.value = existing.targetWeightKg.pretty()
+                targetWaterGlasses.value = existing.targetWaterGlasses
                 age.value = existing.age.toString()
                 gender.value = existing.gender
                 activityLevel.value = ActivityLevel.entries.firstOrNull { it.factor == existing.activityFactor }
@@ -69,6 +75,37 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
                 availableUpdate.value = AppUpdateChecker.checkLatestRelease()
             } catch (_: Exception) {}
         }
+    }
+
+    fun onWeightChanged(newWeight: String) {
+        weight.value = newWeight
+        if (startWeight.value.isBlank()) {
+            startWeight.value = newWeight
+        }
+        val currentW = parseNumberIn(newWeight, 25.0, 300.0)
+        if (currentW != null && targetWeight.value.isBlank()) {
+            when (goal.value) {
+                Goal.LOSE -> targetWeight.value = (currentW * 0.9).pretty()
+                Goal.GAIN -> targetWeight.value = (currentW * 1.05).pretty()
+                else -> targetWeight.value = currentW.pretty()
+            }
+        }
+    }
+
+    fun selectGoal(newGoal: Goal) {
+        goal.value = newGoal
+        val currentW = parseNumberIn(weight.value, 25.0, 300.0)
+        if (currentW != null && (targetWeight.value.isBlank() || targetWeight.value == weight.value)) {
+            when (newGoal) {
+                Goal.LOSE -> targetWeight.value = (currentW * 0.9).pretty()
+                Goal.GAIN -> targetWeight.value = (currentW * 1.05).pretty()
+                Goal.MAINTAIN -> targetWeight.value = currentW.pretty()
+            }
+        }
+    }
+
+    fun setTargetWater(glasses: Int) {
+        targetWaterGlasses.value = glasses.coerceIn(2, 20)
     }
 
     fun checkForUpdates() {
@@ -108,6 +145,9 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
                 if (existing != null) {
                     height.value = existing.heightCm.toString()
                     weight.value = existing.weightKg.pretty()
+                    startWeight.value = existing.startWeightKg.pretty()
+                    targetWeight.value = existing.targetWeightKg.pretty()
+                    targetWaterGlasses.value = existing.targetWaterGlasses
                     age.value = existing.age.toString()
                     gender.value = existing.gender
                     activityLevel.value = ActivityLevel.entries.firstOrNull { it.factor == existing.activityFactor }
@@ -153,6 +193,10 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
             val inputs = parsedInputs()
             errorMessage.value = if (inputs == null) validationMessage() else null
             val valid = inputs ?: return@launch
+            val startKg = parseNumberIn(startWeight.value, 25.0, 300.0) ?: valid.weightKg
+            val targetKg = parseNumberIn(targetWeight.value, 25.0, 300.0) ?: valid.weightKg
+            val waterGlasses = targetWaterGlasses.value.coerceIn(2, 20)
+
             userPreferences.save(
                 UserProfile(
                     heightCm = valid.heightCm,
@@ -160,7 +204,10 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
                     age = valid.age,
                     gender = valid.gender,
                     activityFactor = valid.level.factor,
-                    goalPercent = valid.goal.percent
+                    goalPercent = valid.goal.percent,
+                    startWeightKg = startKg,
+                    targetWeightKg = targetKg,
+                    targetWaterGlasses = waterGlasses
                 )
             )
             saved.value = true
@@ -186,7 +233,7 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun validationMessage(): String = when {
         parseNumberIn(height.value, 100.0, 250.0) == null -> "Проверьте рост: введите число от 100 до 250"
-        parseNumberIn(weight.value, 25.0, 300.0) == null -> "Проверьте вес: введите число от 25 до 300"
+        parseNumberIn(weight.value, 25.0, 300.0) == null -> "Проверьте текущий вес: введите число от 25 до 300"
         parseNumberIn(age.value, 18.0, 120.0) == null -> "Проверьте возраст: введите число от 18 до 120"
         gender.value == null -> "Выберите пол"
         activityLevel.value == null -> "Выберите, как вы проводите день"

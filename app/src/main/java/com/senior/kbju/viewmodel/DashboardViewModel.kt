@@ -29,16 +29,23 @@ data class DashboardUiState(
     val meals: List<MealLogEntity> = emptyList(),
     val activities: List<ActivityLogEntity> = emptyList(),
     val waterGlasses: Int = 0,
-    val targetWaterGlasses: Int = 6
+    val targetWaterGlasses: Int = profile?.targetWaterGlasses ?: 6
 ) {
     val eatenKcal: Int get() = meals.sumOf { it.kcal }.roundToInt()
     val burnedKcal: Int get() = activities.sumOf { it.kcal }.roundToInt()
-    val remainingKcal: Int get() = targetKcal - eatenKcal + burnedKcal
+    // Норма питания фиксированная: активность учитывается отдельно и НЕ плюсуется к норме дневной
+    val remainingKcal: Int get() = targetKcal - eatenKcal
     val protein: Double get() = meals.sumOf { it.protein }
     val fat: Double get() = meals.sumOf { it.fat }
     val carbs: Double get() = meals.sumOf { it.carbs }
     val waterMl: Int get() = waterGlasses * 250
     val targetWaterMl: Int get() = targetWaterGlasses * 250
+
+    val currentWeightKg: Double get() = profile?.weightKg ?: 0.0
+    val startWeightKg: Double get() = profile?.startWeightKg ?: currentWeightKg
+    val targetWeightKg: Double get() = profile?.targetWeightKg ?: currentWeightKg
+    val weightDiffToTarget: Double get() = currentWeightKg - targetWeightKg
+    val weightDiffFromStart: Double get() = currentWeightKg - startWeightKg
 
     val mealsByGroup: Map<MealType, List<MealLogEntity>>
         get() {
@@ -84,23 +91,38 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
             targetCarbs = targets.carbs,
             meals = meals,
             activities = activities,
-            waterGlasses = water?.glasses ?: 0
+            waterGlasses = water?.glasses ?: 0,
+            targetWaterGlasses = profile?.targetWaterGlasses ?: 6
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), DashboardUiState())
 
-    fun addWater() {
-        viewModelScope.launch { diaryRepository.addWaterGlass() }
-    }
-
-    fun removeWater() {
-        viewModelScope.launch { diaryRepository.removeWaterGlass() }
-    }
-
     fun deleteMeal(id: Long) {
-        viewModelScope.launch { diaryRepository.deleteMeal(id) }
+        viewModelScope.launch {
+            diaryRepository.deleteMeal(id)
+        }
     }
 
     fun deleteActivity(id: Long) {
-        viewModelScope.launch { diaryRepository.deleteActivityLog(id) }
+        viewModelScope.launch {
+            diaryRepository.deleteActivityLog(id)
+        }
+    }
+
+    fun addWater() {
+        viewModelScope.launch {
+            diaryRepository.addWaterGlass()
+        }
+    }
+
+    fun removeWater() {
+        viewModelScope.launch {
+            diaryRepository.removeWaterGlass()
+        }
+    }
+
+    fun updateTargetWater(glasses: Int) {
+        viewModelScope.launch {
+            userPreferences.updateTargetWater(glasses)
+        }
     }
 }

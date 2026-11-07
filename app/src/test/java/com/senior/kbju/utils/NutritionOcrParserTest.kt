@@ -105,4 +105,37 @@ class NutritionOcrParserTest {
         assertEquals(null, parsed.fat)
         assertEquals(null, parsed.carbs)
     }
+
+    @Test
+    fun testLabelWith100gDoesNotConfuseCalories() {
+        val ocr = """
+            Пищевая ценность:
+            Энергетическая ценность на 100 г продукта: 380 ккал
+            Белки: 10.0 г
+            Жиры: 15.0 г
+            Углеводы: 50.0 г
+        """.trimIndent()
+
+        val parsed = NutritionOcrParser.parse(ocr)
+        assertEquals(380.0, parsed.kcal ?: 0.0, 0.01)
+        assertEquals(10.0, parsed.protein ?: 0.0, 0.01)
+        assertEquals(15.0, parsed.fat ?: 0.0, 0.01)
+        assertEquals(50.0, parsed.carbs ?: 0.0, 0.01)
+    }
+
+    @Test
+    fun testTableFormat() {
+        val ocr = """
+            Пищевая ценность (на 100г):
+            Белки | Жиры | Углеводы
+            7.5 | 3.2 | 45.0
+            Энергетическая ценность: 240 ккал
+        """.trimIndent()
+
+        val parsed = NutritionOcrParser.parse(ocr)
+        assertEquals(240.0, parsed.kcal ?: 0.0, 0.01)
+        assertEquals(7.5, parsed.protein ?: 0.0, 0.01)
+        assertEquals(3.2, parsed.fat ?: 0.0, 0.01)
+        assertEquals(45.0, parsed.carbs ?: 0.0, 0.01)
+    }
 }

@@ -91,16 +91,51 @@ fun WeightScreen(onFinished: () -> Unit, viewModel: WeightViewModel = viewModel(
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
                     text = "Текущий вес: ${profile?.weightKg?.pretty() ?: "—"} кг",
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold
                 )
+
+                val cur = profile?.weightKg
+                val start = profile?.startWeightKg ?: cur
+                val target = profile?.targetWeightKg ?: cur
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(text = "Исходный", fontSize = 16.sp, color = androidx.compose.ui.graphics.Color.Gray)
+                        Text(text = "${start?.pretty() ?: "—"} кг", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(text = "Желаемый (цель)", fontSize = 16.sp, color = androidx.compose.ui.graphics.Color.Gray)
+                        Text(text = "${target?.pretty() ?: "—"} кг", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+
+                if (cur != null && target != null) {
+                    val diff = cur - target
+                    val goalMsg = when {
+                        kotlin.math.abs(diff) < 0.2 -> "🎉 Поздравляем! Вы достигли цели!"
+                        diff > 0 -> "🎯 До цели осталось сбросить: ${(diff).pretty()} кг"
+                        else -> "🎯 До цели осталось набрать: ${(-diff).pretty()} кг"
+                    }
+                    Text(
+                        text = goalMsg,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AccentOrange
+                    )
+                }
+
                 Text(
                     text = "Суточная норма: ${currentTarget ?: "—"} ккал в день",
-                    fontSize = 20.sp
+                    fontSize = 18.sp,
+                    color = androidx.compose.ui.graphics.Color.DarkGray
                 )
             }
         }
@@ -160,7 +195,7 @@ fun WeightScreen(onFinished: () -> Unit, viewModel: WeightViewModel = viewModel(
             }
         }
 
-        OutlineBigButton(text = "НА ГОЛОВНУЮ", onClick = onFinished)
+        OutlineBigButton(text = "НА ГЛАВНУЮ", onClick = onFinished)
         Spacer(modifier = Modifier.height(24.dp))
     }
 }

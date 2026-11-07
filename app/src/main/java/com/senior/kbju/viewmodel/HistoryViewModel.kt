@@ -19,9 +19,9 @@ data class HistoryDayUiModel(
     val targetKcal: Int,
     val waterMl: Int = 0
 ) {
-    // Положительное значение — дефицит (норма минус съеденное плюс сожжённое),
-    // отрицательное — перебор.
-    val balance: Int get() = targetKcal - eatenKcal + burnedKcal
+    // Положительное значение — осталось до нормы, отрицательное — перебор.
+    // Активность учитывается отдельно и не плюсуется к норме питания.
+    val balance: Int get() = targetKcal - eatenKcal
 }
 
 data class HistoryUiState(

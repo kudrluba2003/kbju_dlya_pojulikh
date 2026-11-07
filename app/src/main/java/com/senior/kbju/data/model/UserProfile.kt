@@ -8,5 +8,8 @@ data class UserProfile(
     val age: Int,
     val gender: Gender,
     val activityFactor: Double,
-    val goalPercent: Int
+    val goalPercent: Int,
+    val startWeightKg: Double = weightKg,
+    val targetWeightKg: Double = weightKg,
+    val targetWaterGlasses: Int = 6
 )

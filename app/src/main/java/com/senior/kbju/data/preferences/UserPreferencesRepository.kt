@@ -25,6 +25,9 @@ class UserPreferencesRepository(private val context: Context) {
         val ACTIVITY_FACTOR = doublePreferencesKey("activity_factor")
         val GOAL_PERCENT = intPreferencesKey("goal_percent")
         val REMINDERS_ENABLED = booleanPreferencesKey("reminders_enabled")
+        val START_WEIGHT_KG = doublePreferencesKey("start_weight_kg")
+        val TARGET_WEIGHT_KG = doublePreferencesKey("target_weight_kg")
+        val TARGET_WATER_GLASSES = intPreferencesKey("target_water_glasses")
     }
 
     val remindersEnabled: Flow<Boolean> = context.userSettings.data.map { prefs ->
@@ -43,13 +46,19 @@ class UserPreferencesRepository(private val context: Context) {
         val gender = Gender.entries.firstOrNull { it.name == prefs[Keys.GENDER] } ?: return@map null
         val activityFactor = prefs[Keys.ACTIVITY_FACTOR] ?: return@map null
         val goalPercent = prefs[Keys.GOAL_PERCENT] ?: return@map null
+        val startWeightKg = prefs[Keys.START_WEIGHT_KG] ?: weightKg
+        val targetWeightKg = prefs[Keys.TARGET_WEIGHT_KG] ?: weightKg
+        val targetWaterGlasses = prefs[Keys.TARGET_WATER_GLASSES] ?: 6
         UserProfile(
             heightCm = heightCm,
             weightKg = weightKg,
             age = age,
             gender = gender,
             activityFactor = activityFactor,
-            goalPercent = goalPercent
+            goalPercent = goalPercent,
+            startWeightKg = startWeightKg,
+            targetWeightKg = targetWeightKg,
+            targetWaterGlasses = targetWaterGlasses
         )
     }
 
@@ -61,10 +70,30 @@ class UserPreferencesRepository(private val context: Context) {
             prefs[Keys.GENDER] = profile.gender.name
             prefs[Keys.ACTIVITY_FACTOR] = profile.activityFactor
             prefs[Keys.GOAL_PERCENT] = profile.goalPercent
+            prefs[Keys.START_WEIGHT_KG] = profile.startWeightKg
+            prefs[Keys.TARGET_WEIGHT_KG] = profile.targetWeightKg
+            prefs[Keys.TARGET_WATER_GLASSES] = profile.targetWaterGlasses
         }
     }
 
     suspend fun updateWeight(newWeightKg: Double) {
-        context.userSettings.edit { it[Keys.WEIGHT_KG] = newWeightKg }
+        context.userSettings.edit { prefs ->
+            prefs[Keys.WEIGHT_KG] = newWeightKg
+            if (!prefs.contains(Keys.START_WEIGHT_KG)) {
+                prefs[Keys.START_WEIGHT_KG] = newWeightKg
+            }
+        }
+    }
+
+    suspend fun updateTargetWater(glasses: Int) {
+        context.userSettings.edit { prefs ->
+            prefs[Keys.TARGET_WATER_GLASSES] = glasses.coerceIn(2, 20)
+        }
+    }
+
+    suspend fun updateTargetWeight(targetWeightKg: Double) {
+        context.userSettings.edit { prefs ->
+            prefs[Keys.TARGET_WEIGHT_KG] = targetWeightKg
+        }
     }
 }

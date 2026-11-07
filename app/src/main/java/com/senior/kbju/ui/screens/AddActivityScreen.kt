@@ -144,7 +144,7 @@ fun AddActivityScreen(onFinished: () -> Unit, viewModel: AddActivityViewModel = 
                     fontWeight = FontWeight.Bold
                 )
             }
-            BigButton(text = "НА ГОЛОВНУЮ", onClick = onFinished, color = AccentBlue)
+            BigButton(text = "НА ГЛАВНУЮ", onClick = onFinished, color = AccentBlue)
         }
         Spacer(modifier = Modifier.height(24.dp))
     }

@@ -210,6 +210,135 @@ fun DashboardScreen(
                         }
                     }
                 }
+
+                // Регулировка дневной нормы воды
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Норма: ${state.targetWaterGlasses} ст. (${state.targetWaterMl} мл)",
+                        fontSize = 17.sp,
+                        color = Color.DarkGray
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        TextButton(
+                            onClick = {
+                                if (state.targetWaterGlasses > 2) {
+                                    viewModel.updateTargetWater(state.targetWaterGlasses - 1)
+                                }
+                            }
+                        ) {
+                            Text("➖", fontSize = 18.sp)
+                        }
+                        TextButton(
+                            onClick = {
+                                if (state.targetWaterGlasses < 20) {
+                                    viewModel.updateTargetWater(state.targetWaterGlasses + 1)
+                                }
+                            }
+                        ) {
+                            Text("➕", fontSize = 18.sp)
+                        }
+                    }
+                }
+            }
+        }
+
+        // Карточка цели и прогресса по весу
+        if (state.profile != null) {
+            Card(
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = SoftGray),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "⚖️ Контроль веса",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "${state.currentWeightKg.pretty()} кг",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = AccentOrange
+                        )
+                    }
+
+                    // Три ключевых веса: исходный, текущий, желаемый
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(text = "Исходный", fontSize = 16.sp, color = Color.Gray)
+                            Text(text = "${state.startWeightKg.pretty()} кг", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(text = "Текущий", fontSize = 16.sp, color = Color.Gray)
+                            Text(text = "${state.currentWeightKg.pretty()} кг", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(text = "Желаемый", fontSize = 16.sp, color = Color.Gray)
+                            Text(text = "${state.targetWeightKg.pretty()} кг", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+
+                    // Баннер прогресса до цели
+                    val diffToTarget = state.weightDiffToTarget
+                    val goalText = when {
+                        kotlin.math.abs(diffToTarget) < 0.2 -> "🎉 Поздравляем! Вы достигли цели!"
+                        diffToTarget > 0 -> "🎯 До цели осталось сбросить: ${(diffToTarget).pretty()} кг"
+                        else -> "🎯 До цели осталось набрать: ${(-diffToTarget).pretty()} кг"
+                    }
+                    val diffFromStart = state.weightDiffFromStart
+                    val startMsg = when {
+                        kotlin.math.abs(diffFromStart) < 0.2 -> null
+                        diffFromStart < 0 -> "С начала пути сброшено: ${(-diffFromStart).pretty()} кг"
+                        else -> "С начала пути набрано: ${(diffFromStart).pretty()} кг"
+                    }
+
+                    Card(
+                        shape = RoundedCornerShape(8.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(10.dp)) {
+                            Text(
+                                text = goalText,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = AccentOrange
+                            )
+                            if (startMsg != null) {
+                                Text(
+                                    text = startMsg,
+                                    fontSize = 15.sp,
+                                    color = Color.DarkGray
+                                )
+                            }
+                        }
+                    }
+
+                    BigButton(
+                        text = "⚖️ ОБНОВИТЬ ВЕС / ГРАФИК",
+                        onClick = onUpdateWeight,
+                        color = AccentOrange,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
         }
 
