@@ -1,36 +1,74 @@
-name: Android CI & Release Build
+name: Android CI & Release
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "main" ]
+    tags: [ "v*" ]
   pull_request:
-    branches: [ "main", "master" ]
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
-  build:
+  build-and-release:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Set up JDK 17
-      uses: actions/setup-java@v4
-      with:
-        java-version: '17'
-        distribution: 'corretto'
-        cache: gradle
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'corretto'
 
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
 
-    - name: Run Unit Tests
-      run: ./gradlew testDebugUnitTest
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
 
-    - name: Build Debug APK
-      run: ./gradlew assembleDebug
+      - name: Run Unit Tests
+        run: ./gradlew testDebugUnitTest --no-daemon
 
-    - name: Upload Debug APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: senior-kbju-debug
-        path: app/build/outputs/apk/debug/*.apk
+      - name: Build Signed Release APK
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Upload Release Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: app/build/outputs/apk/release/app-release.apk
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Релиз ${{ github.ref_name }} — Дневник питания
+          tag_name: ${{ github.ref_name }}
+          files: app/build/outputs/apk/release/app-release.apk
+          body: |
+            ## Дневник питания и КБЖУ для пожилых людей (${{ github.ref_name }})
+
+            Официальный релиз приложения для простого и удобного контроля питания и параметров здоровья.
+
+            ### Возможности приложения:
+            * **Специальный интерфейс**: крупные кнопки и шрифты (цели нажатия от 72dp), высокая контрастность, отсутствие перегруженности.
+            * **Офлайн-база продуктов**: справочник продуктов и блюд доступен без подключения к интернету.
+            * **Сканирование этикеток (OCR)**: распознавание КБЖУ прямо с упаковки через камеру телефона (работает офлайн через ML Kit).
+            * **Напоминания о приёмах пищи**: ненавязчивые уведомления в 13:00 и 19:00.
+            * **Контроль воды и веса**: наглядный график динамики веса и удобный учёт стаканов воды.
+            * **Экспорт отчёта**: формирование отчёта по питанию за неделю для врача или близких через стандартное меню «Поделиться».
+            * **Резервное копирование**: сохранение и восстановление истории при смене устройства.
+            * **Встроенное автообновление**: приложение само проверяет наличие новых версий на GitHub.
+
+            ### Установка:
+            1. Скачайте файл **`app-release.apk`** ниже.
+            2. Откройте файл на Android-устройстве и подтвердите установку.
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
