@@ -37,10 +37,12 @@ import com.senior.kbju.ui.theme.CardBorder
 import com.senior.kbju.ui.theme.SurfaceWhite
 import com.senior.kbju.ui.theme.TextDark
 import com.senior.kbju.ui.theme.TextMuted
+import com.senior.kbju.ui.components.OutlineBigButton
 import com.senior.kbju.viewmodel.DashboardViewModel
 
 @Composable
 fun WaterScreen(
+    onBack: (() -> Unit)? = null,
     viewModel: DashboardViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -60,6 +62,14 @@ fun WaterScreen(
             .padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        if (onBack != null) {
+            OutlineBigButton(
+                text = "← НАЗАД В МЕНЮ ЕЩЁ",
+                onClick = onBack,
+                modifier = Modifier.fillMaxWidth().height(52.dp)
+            )
+        }
+
         Text(
             text = "💧 Водный баланс",
             fontSize = 28.sp,

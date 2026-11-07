@@ -208,29 +208,50 @@ fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewMode
             suffix = "кг"
         )
 
-        // Подсказка разницы до цели
+        // Подсказка прогресса и разницы до цели
         val curW = com.senior.kbju.utils.parseNumberIn(weight, 25.0, 300.0)
+        val startW = com.senior.kbju.utils.parseNumberIn(startWeight, 25.0, 300.0)
         val tgtW = com.senior.kbju.utils.parseNumberIn(targetWeight, 25.0, 300.0)
         if (curW != null && tgtW != null) {
             val diff = curW - tgtW
-            val goalMsg = when {
-                kotlin.math.abs(diff) < 0.2 -> "🎉 Текущий вес совпадает с желаемым!"
-                diff > 0 -> "🎯 До цели осталось сбросить: ${diff.pretty()} кг"
-                else -> "🎯 До цели осталось набрать: ${(-diff).pretty()} кг"
-            }
+            val dropped = if (startW != null) startW - curW else null
+
             ModernCard(
-                shape = RoundedCornerShape(14.dp),
-                backgroundColor = AccentBlueLight,
-                borderColor = AccentBlueBorder,
+                shape = RoundedCornerShape(16.dp),
+                backgroundColor = AccentGreenLight,
+                borderColor = AccentGreenBorder,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = goalMsg,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = AccentBlue,
-                    modifier = Modifier.padding(14.dp)
-                )
+                Column(
+                    modifier = Modifier.padding(14.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    if (dropped != null && kotlin.math.abs(dropped) >= 0.1) {
+                        val dropMsg = if (dropped > 0) {
+                            "🎉 Уже сброшено со старта: ${dropped.pretty()} кг"
+                        } else {
+                            "💪 Набрано со старта: ${(-dropped).pretty()} кг"
+                        }
+                        Text(
+                            text = dropMsg,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = AccentGreen
+                        )
+                    }
+
+                    val goalMsg = when {
+                        kotlin.math.abs(diff) < 0.2 -> "🏆 Текущий вес совпадает с желаемым!"
+                        diff > 0 -> "🎯 До цели осталось сбросить: ${diff.pretty()} кг"
+                        else -> "🎯 До цели осталось набрать: ${(-diff).pretty()} кг"
+                    }
+                    Text(
+                        text = goalMsg,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AccentBlue
+                    )
+                }
             }
         }
 

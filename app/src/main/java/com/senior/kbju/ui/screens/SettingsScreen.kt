@@ -17,6 +17,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
@@ -48,13 +51,16 @@ import com.senior.kbju.ui.components.ModernCard
 import com.senior.kbju.ui.components.OutlineBigButton
 import com.senior.kbju.ui.components.SectionTitle
 import com.senior.kbju.ui.theme.AccentBlue
+import com.senior.kbju.ui.theme.AccentBlueLight
 import com.senior.kbju.ui.theme.AccentGreen
 import com.senior.kbju.ui.theme.AccentGreenBorder
 import com.senior.kbju.ui.theme.AccentGreenLight
 import com.senior.kbju.ui.theme.CardBorder
 import com.senior.kbju.ui.theme.ErrorRed
 import com.senior.kbju.ui.theme.ErrorRedLight
+import com.senior.kbju.ui.theme.SoftGray
 import com.senior.kbju.ui.theme.SurfaceWhite
+import com.senior.kbju.ui.theme.TextDark
 import com.senior.kbju.ui.theme.TextDark
 import com.senior.kbju.ui.theme.TextMuted
 import com.senior.kbju.utils.AppUpdateChecker
@@ -63,7 +69,10 @@ import com.senior.kbju.viewmodel.SettingsViewModel
 import kotlinx.coroutines.launch
 
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
+fun SettingsScreen(
+    onBack: (() -> Unit)? = null,
+    viewModel: SettingsViewModel = viewModel()
+) {
     val availableUpdate by viewModel.availableUpdate.collectAsState()
     val isCheckingUpdate by viewModel.isCheckingUpdate.collectAsState()
     val updateCheckMessage by viewModel.updateCheckMessage.collectAsState()
@@ -112,6 +121,14 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
             .padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        if (onBack != null) {
+            OutlineBigButton(
+                text = "← НАЗАД В МЕНЮ ЕЩЁ",
+                onClick = onBack,
+                modifier = Modifier.fillMaxWidth().height(52.dp)
+            )
+        }
+
         Text(
             text = "⚙️ Настройки",
             fontSize = 28.sp,
@@ -267,23 +284,29 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                     ) {
                         Text(
                             text = "Завтрак: $breakfastHour:00",
-                            fontSize = 19.sp,
-                            fontWeight = FontWeight.Medium,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
                             color = TextDark
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            BigButton(
-                                text = "➖ 1 ч",
+                            Button(
                                 onClick = { viewModel.adjustBreakfastHour(-1) },
-                                color = Color(0xFF64748B),
-                                modifier = Modifier.height(52.dp)
-                            )
-                            BigButton(
-                                text = "➕ 1 ч",
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = SoftGray, contentColor = TextDark),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                                modifier = Modifier.height(48.dp)
+                            ) {
+                                Text("➖ 1 ч", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Button(
                                 onClick = { viewModel.adjustBreakfastHour(1) },
-                                color = AccentBlue,
-                                modifier = Modifier.height(52.dp)
-                            )
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = AccentBlueLight, contentColor = AccentBlue),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                                modifier = Modifier.height(48.dp)
+                            ) {
+                                Text("➕ 1 ч", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
 
@@ -295,23 +318,29 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                     ) {
                         Text(
                             text = "Обед: $lunchHour:00",
-                            fontSize = 19.sp,
-                            fontWeight = FontWeight.Medium,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
                             color = TextDark
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            BigButton(
-                                text = "➖ 1 ч",
+                            Button(
                                 onClick = { viewModel.adjustLunchHour(-1) },
-                                color = Color(0xFF64748B),
-                                modifier = Modifier.height(52.dp)
-                            )
-                            BigButton(
-                                text = "➕ 1 ч",
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = SoftGray, contentColor = TextDark),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                                modifier = Modifier.height(48.dp)
+                            ) {
+                                Text("➖ 1 ч", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Button(
                                 onClick = { viewModel.adjustLunchHour(1) },
-                                color = AccentBlue,
-                                modifier = Modifier.height(52.dp)
-                            )
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = AccentBlueLight, contentColor = AccentBlue),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                                modifier = Modifier.height(48.dp)
+                            ) {
+                                Text("➕ 1 ч", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
 
@@ -323,23 +352,29 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                     ) {
                         Text(
                             text = "Ужин: $dinnerHour:00",
-                            fontSize = 19.sp,
-                            fontWeight = FontWeight.Medium,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
                             color = TextDark
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            BigButton(
-                                text = "➖ 1 ч",
+                            Button(
                                 onClick = { viewModel.adjustDinnerHour(-1) },
-                                color = Color(0xFF64748B),
-                                modifier = Modifier.height(52.dp)
-                            )
-                            BigButton(
-                                text = "➕ 1 ч",
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = SoftGray, contentColor = TextDark),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                                modifier = Modifier.height(48.dp)
+                            ) {
+                                Text("➖ 1 ч", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                            }
+                            Button(
                                 onClick = { viewModel.adjustDinnerHour(1) },
-                                color = AccentBlue,
-                                modifier = Modifier.height(52.dp)
-                            )
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = AccentBlueLight, contentColor = AccentBlue),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp),
+                                modifier = Modifier.height(48.dp)
+                            ) {
+                                Text("➕ 1 ч", fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                            }
                         }
                     }
                 }

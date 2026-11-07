@@ -89,6 +89,12 @@ fun WeightScreen(onFinished: () -> Unit, viewModel: WeightViewModel = viewModel(
             .padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        OutlineBigButton(
+            text = "← НАЗАД В МЕНЮ ЕЩЁ",
+            onClick = onFinished,
+            modifier = Modifier.fillMaxWidth().height(52.dp)
+        )
+
         Text(
             text = "⚖️ Контроль веса",
             fontSize = 28.sp,

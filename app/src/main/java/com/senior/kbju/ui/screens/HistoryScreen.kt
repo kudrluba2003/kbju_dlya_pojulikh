@@ -50,12 +50,18 @@ fun HistoryScreen(onBack: () -> Unit, viewModel: HistoryViewModel = viewModel())
     val context = LocalContext.current
 
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlineBigButton(
+            text = "← НАЗАД В МЕНЮ ЕЩЁ",
+            onClick = onBack,
+            modifier = Modifier.fillMaxWidth().height(52.dp)
+        )
         Text(
             text = "📅 История за неделю",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             color = TextDark,
-            modifier = Modifier.padding(top = 18.dp)
+            modifier = Modifier.padding(top = 10.dp)
         )
         Text(
             text = "Ваша суточная норма: ${state.targetKcal} ккал",

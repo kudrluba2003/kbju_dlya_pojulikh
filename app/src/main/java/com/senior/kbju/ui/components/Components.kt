@@ -60,13 +60,13 @@ fun ModernCard(
 fun BigButton(
     text: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier.fillMaxWidth(),
     color: Color = MaterialTheme.colorScheme.primary,
     enabled: Boolean = true
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().heightIn(min = 68.dp),
+        modifier = modifier.heightIn(min = 56.dp),
         enabled = enabled,
         shape = RoundedCornerShape(16.dp),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp, pressedElevation = 0.dp),
@@ -90,13 +90,13 @@ fun BigButton(
 fun OutlineBigButton(
     text: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+    modifier: Modifier = Modifier.fillMaxWidth(),
     enabled: Boolean = true,
-    buttonHeight: Dp = 64.dp
+    buttonHeight: Dp = 56.dp
 ) {
     OutlinedButton(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().heightIn(min = buttonHeight),
+        modifier = modifier.heightIn(min = buttonHeight),
         enabled = enabled,
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.5.dp, MaterialTheme.colorScheme.outline),

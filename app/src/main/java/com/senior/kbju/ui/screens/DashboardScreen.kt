@@ -36,7 +36,6 @@ import com.senior.kbju.ui.components.BigButton
 import com.senior.kbju.ui.components.ModernCard
 import com.senior.kbju.ui.components.RingProgress
 import com.senior.kbju.ui.theme.AccentBlue
-import com.senior.kbju.ui.theme.AccentBlueBorder
 import com.senior.kbju.ui.theme.AccentBlueLight
 import com.senior.kbju.ui.theme.AccentGreen
 import com.senior.kbju.ui.theme.AccentGreenBorder
@@ -57,6 +56,7 @@ import java.util.Locale
 @Composable
 fun DashboardScreen(
     onEditProfile: () -> Unit,
+    onAddFood: () -> Unit,
     viewModel: DashboardViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -92,11 +92,9 @@ fun DashboardScreen(
     val progress = if (state.targetKcal > 0) {
         state.eatenKcal.toFloat() / state.targetKcal
     } else 0f
-    val remaining = state.remainingKcal
 
     val isExceeded = state.eatenKcal > state.targetKcal + 100
     val ringColor = if (isExceeded) AccentOrange else AccentGreen
-
     val netCalories = state.netCalories
 
     Column(
@@ -202,7 +200,7 @@ fun DashboardScreen(
                 RingProgress(
                     progress = progress,
                     progressColor = ringColor,
-                    modifier = Modifier.size(250.dp)
+                    modifier = Modifier.size(240.dp)
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(text = "Съедено", fontSize = 18.sp, color = TextMuted)
@@ -232,71 +230,31 @@ fun DashboardScreen(
             }
         }
 
-        // Плашки: Сожжено (персиковая) и Осталось съесть (мятная)
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+        // Карточки: Съедено и Сожжено
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            ModernStatCard(
+                title = "Съедено",
+                value = "${state.eatenKcal} ккал",
+                icon = "🍽️",
+                subtitle = "норма: ${state.targetKcal} ккал",
+                backgroundColor = AccentGreenLight,
+                borderColor = AccentGreenBorder,
+                valueColor = AccentGreen,
+                modifier = Modifier.weight(1f)
+            )
             ModernStatCard(
                 title = "Сожжено",
                 value = "${state.burnedKcal} ккал",
                 icon = "🔥",
-                subtitle = if (state.activityBurnedKcal > 0) "базовый ${state.basalMetabolismKcal} + спорт ${state.activityBurnedKcal}" else "базовый метаболизм",
+                subtitle = if (state.activityBurnedKcal > 0) "спорт: ${state.activityBurnedKcal} ккал" else "в покое + шаги",
                 backgroundColor = AccentOrangeLight,
                 borderColor = AccentOrangeBorder,
                 valueColor = AccentOrange,
                 modifier = Modifier.weight(1f)
             )
-            ModernStatCard(
-                title = if (remaining >= 0) "Осталось" else "Сверху нормы",
-                value = if (remaining >= 0) "$remaining ккал" else "${-remaining} ккал",
-                icon = "🥗",
-                backgroundColor = if (isExceeded) AccentOrangeLight else AccentGreenLight,
-                borderColor = if (isExceeded) AccentOrangeBorder else AccentGreenBorder,
-                valueColor = if (isExceeded) AccentOrange else AccentGreen,
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        // Карточка: Ваш базовый метаболизм (нежно-голубая)
-        ModernCard(
-            shape = RoundedCornerShape(18.dp),
-            backgroundColor = AccentBlueLight,
-            borderColor = AccentBlueBorder,
-            elevation = 1.dp,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(18.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    modifier = Modifier.weight(1f),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text("⚡", fontSize = 28.sp)
-                    Column {
-                        Text(
-                            text = "Базовый метаболизм",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextDark
-                        )
-                        Text(
-                            text = "Расход энергии в покое при весе ${state.currentWeightKg} кг",
-                            fontSize = 15.sp,
-                            color = TextMuted
-                        )
-                    }
-                }
-                Text(
-                    text = "${state.basalMetabolismKcal} ккал",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Black,
-                    color = AccentBlue
-                )
-            }
         }
 
         // Плашка: Дефицит за день
@@ -342,6 +300,16 @@ fun DashboardScreen(
             }
         }
 
+        // Большая кнопка "ЗАПИСАТЬ ЕДУ"
+        BigButton(
+            text = "🍏 ЗАПИСАТЬ ЕДУ",
+            onClick = onAddFood,
+            color = AccentGreen,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(68.dp)
+        )
+
         // Крупная кнопка "Мой профиль" в глубоком графитовом цвете
         BigButton(
             text = "👤 МОЙ ПРОФИЛЬ",
@@ -352,7 +320,7 @@ fun DashboardScreen(
                 .height(66.dp)
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
     }
 }
 
@@ -396,7 +364,7 @@ private fun ModernStatCard(
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = value,
-                fontSize = 24.sp,
+                fontSize = 22.sp,
                 fontWeight = FontWeight.Black,
                 color = valueColor,
                 textAlign = TextAlign.Center
