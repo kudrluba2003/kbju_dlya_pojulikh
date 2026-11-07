@@ -198,11 +198,20 @@ fun SettingsScreen(
                             }
                         }
                         is AppUpdateInstaller.DownloadState.ReadyToInstall -> {
-                            BigButton(
-                                text = "✅ УСТАНОВИТЬ ОБНОВЛЕНИЕ",
-                                onClick = { AppUpdateInstaller.installApk(context, dl.file) },
-                                color = AccentGreen
-                            )
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                BigButton(
+                                    text = "✅ УСТАНОВИТЬ ОБНОВЛЕНИЕ",
+                                    onClick = { AppUpdateInstaller.installApk(context, dl.file) },
+                                    color = AccentGreen
+                                )
+                                OutlineBigButton(
+                                    text = "🌐 ОТКРЫТЬ В БРАУЗЕРЕ (ЕСЛИ НЕ СТАВИТСЯ)",
+                                    onClick = {
+                                        val url = update.apkDownloadUrl ?: update.releaseUrl
+                                        context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                                    }
+                                )
+                            }
                         }
                         is AppUpdateInstaller.DownloadState.Error -> {
                             Text(text = dl.message, fontSize = 16.sp, color = ErrorRed)

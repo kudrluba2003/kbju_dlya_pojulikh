@@ -3,6 +3,9 @@ package com.senior.kbju.utils
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import android.widget.Toast
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -88,6 +91,24 @@ object AppUpdateInstaller {
 
     fun installApk(context: Context, apkFile: File) {
         try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (!context.packageManager.canRequestPackageInstalls()) {
+                    val permissionIntent = Intent(
+                        Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                        Uri.parse("package:${context.packageName}")
+                    ).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    context.startActivity(permissionIntent)
+                    Toast.makeText(
+                        context,
+                        "Пожалуйста, разрешите установку обновлений для этого приложения",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    return
+                }
+            }
+
             val contentUri: Uri = FileProvider.getUriForFile(
                 context,
                 "${context.packageName}.fileprovider",
@@ -98,6 +119,12 @@ object AppUpdateInstaller {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
             }
             context.startActivity(intent)
-        } catch (_: Exception) {}
+        } catch (e: Exception) {
+            Toast.makeText(
+                context,
+                "Ошибка запуска установщика: ${e.localizedMessage ?: "проверьте разрешения"}",
+                Toast.LENGTH_LONG
+            ).show()
+        }
     }
 }
