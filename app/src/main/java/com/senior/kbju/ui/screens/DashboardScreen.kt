@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.senior.kbju.ui.components.BigButton
 import com.senior.kbju.ui.components.ModernCard
-import com.senior.kbju.ui.components.OutlineBigButton
+import com.senior.kbju.utils.pretty
 import com.senior.kbju.ui.components.RingProgress
 import com.senior.kbju.ui.theme.AccentBlue
 import com.senior.kbju.ui.theme.AccentBlueLight
@@ -322,14 +322,83 @@ fun DashboardScreen(
             }
         }
 
-        // Крупная кнопка "Мой профиль" с высокой контрастностью и чётким текстом
-        OutlineBigButton(
-            text = "👤 МОЙ ПРОФИЛЬ",
-            onClick = onEditProfile,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(66.dp)
-        )
+        // Плашка: Мой вес (некликабельная)
+        val curWeight = state.currentWeightKg
+        val startWeight = state.startWeightKg
+        val targetWeight = state.targetWeightKg
+        val lostWeight = startWeight - curWeight
+        val diffToTarget = curWeight - targetWeight
+
+        val lostText = when {
+            lostWeight > 0.05 -> "Сброшено: ${lostWeight.pretty()} кг"
+            lostWeight < -0.05 -> "Набрано: ${(-lostWeight).pretty()} кг"
+            else -> "Сброшено: 0 кг"
+        }
+
+        val targetRemainingText = when {
+            kotlin.math.abs(diffToTarget) < 0.2 -> "Цель достигнута! 🎉"
+            diffToTarget > 0 -> "До цели осталось: ${diffToTarget.pretty()} кг"
+            else -> "До цели: +${(-diffToTarget).pretty()} кг"
+        }
+
+        ModernCard(
+            shape = RoundedCornerShape(18.dp),
+            backgroundColor = SurfaceWhite,
+            borderColor = AccentGreenBorder,
+            elevation = 1.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text("⚖️", fontSize = 28.sp)
+                        Text(
+                            text = "Мой вес",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextDark
+                        )
+                    }
+                    Text(
+                        text = "${curWeight.pretty()} кг",
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Black,
+                        color = AccentGreen
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = lostText,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = TextMuted
+                    )
+                    Text(
+                        text = targetRemainingText,
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (kotlin.math.abs(diffToTarget) < 0.2) AccentGreen else AccentBlue
+                    )
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(20.dp))
     }

@@ -40,6 +40,7 @@ import com.senior.kbju.viewmodel.DashboardViewModel
 
 @Composable
 fun MoreScreen(
+    onOpenProfile: () -> Unit,
     onOpenWater: () -> Unit,
     onOpenWeight: () -> Unit,
     onOpenHistory: () -> Unit,
@@ -63,13 +64,27 @@ fun MoreScreen(
                 color = TextDark
             )
             Text(
-                text = "Вода, контроль веса, отчёты и настройки",
+                text = "Профиль, вода, контроль веса, отчёты и настройки",
                 fontSize = 17.sp,
                 color = TextMuted
             )
         }
 
-        // 1. Карточка Вода
+        // 1. Карточка Профиль
+        val profileBadge = if (state.targetKcal > 0) {
+            "Норма: ${state.targetKcal} ккал / день"
+        } else "Заполнить анкету"
+        MoreNavCard(
+            title = "Мой профиль",
+            icon = "👤",
+            subtitle = "Рост, желаемый вес, активность и расчёт калорий",
+            badgeText = profileBadge,
+            badgeColor = AccentGreenLight,
+            badgeTextColor = AccentGreen,
+            onClick = onOpenProfile
+        )
+
+        // 2. Карточка Вода
         val waterBadge = if (state.targetWaterMl > 0) {
             "Сегодня: ${state.waterMl} мл из ${state.targetWaterMl} мл"
         } else "Учёт стаканов воды"

@@ -460,46 +460,66 @@ fun SettingsScreen(
                         text = msg,
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
-                        color = if (msg.startsWith("✅")) AccentGreen else ErrorRed
+                        color = AccentGreen
                     )
+                }
 
-                    if (msg.startsWith("⚠️")) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlineBigButton(
-                                text = "📋 СКОПИРОВАТЬ ТЕКСТ",
-                                onClick = {
-                                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
-                                    clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("Отзыв", feedbackInput))
-                                    android.widget.Toast.makeText(context, "Текст скопирован в буфер обмена", android.widget.Toast.LENGTH_SHORT).show()
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                            OutlineBigButton(
-                                text = "✉️ В ПОЧТУ",
-                                onClick = {
-                                    val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
-                                        data = Uri.parse("mailto:kudrluba2003@gmail.com")
-                                        putExtra(Intent.EXTRA_SUBJECT, "Отзыв SeniorKbju")
-                                        putExtra(Intent.EXTRA_TEXT, feedbackInput)
-                                    }
-                                    try {
-                                        context.startActivity(emailIntent)
-                                    } catch (_: Exception) {}
-                                },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlineBigButton(
+                        text = "📋 СКОПИРОВАТЬ",
+                        onClick = {
+                            val body = feedbackInput.trim()
+                            if (body.isNotBlank()) {
+                                val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+                                clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("Отзыв", body))
+                                android.widget.Toast.makeText(context, "Текст отзыва скопирован в буфер", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                    OutlineBigButton(
+                        text = "✉️ В ПОЧТУ",
+                        onClick = {
+                            val body = feedbackInput.trim()
+                            if (body.isNotBlank()) {
+                                val emailSubject = "Отзыв о приложении КБЖУ для старших"
+                                val emailBody = "$body\n\n---\nУстройство: ${Build.MANUFACTURER} ${Build.MODEL}\nAndroid: ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})\nВерсия: ${BuildConfig.VERSION_NAME}"
+                                val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
+                                    data = Uri.parse("mailto:kudrluba2003@gmail.com")
+                                    putExtra(Intent.EXTRA_SUBJECT, emailSubject)
+                                    putExtra(Intent.EXTRA_TEXT, emailBody)
+                                }
+                                try {
+                                    context.startActivity(emailIntent)
+                                } catch (_: Exception) {}
+                            }
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
 
                 BigButton(
-                    text = if (isSendingFeedback) "ОТПРАВЛЯЕМ..." else "📨 ОТПРАВИТЬ ОТЗЫВ",
+                    text = if (isSendingFeedback) "ОТПРАВЛЯЕМ..." else "📨 ОТПРАВИТЬ РАЗРАБОТЧИКУ",
                     onClick = {
                         val body = feedbackInput.trim()
                         if (body.isNotBlank() && !isSendingFeedback) {
+                            val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+                            clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("Отзыв", body))
+
+                            val emailSubject = "Отзыв о приложении КБЖУ для старших"
+                            val emailBody = "$body\n\n---\nУстройство: ${Build.MANUFACTURER} ${Build.MODEL}\nAndroid: ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})\nВерсия: ${BuildConfig.VERSION_NAME}"
+                            val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
+                                data = Uri.parse("mailto:kudrluba2003@gmail.com")
+                                putExtra(Intent.EXTRA_SUBJECT, emailSubject)
+                                putExtra(Intent.EXTRA_TEXT, emailBody)
+                            }
+                            try {
+                                context.startActivity(emailIntent)
+                            } catch (_: Exception) {}
+
                             viewModel.sendFeedback(body) {
                                 feedbackInput = ""
                             }

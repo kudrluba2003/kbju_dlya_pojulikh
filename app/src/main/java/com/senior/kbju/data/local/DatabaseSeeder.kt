@@ -15,19 +15,18 @@ class DatabaseSeeder(
     // Сеем один раз: если таблица уже заполнена, повторный запуск ничего не делает,
     // поэтому поиск по продуктам всегда работает локально и мгновенно.
     suspend fun seedIfEmpty() {
-        val defaultFoods = SeedData.foods()
+        val assetFoods = loadFoodsFromAssets()
+        val allSeeds = (assetFoods ?: emptyList()) + SeedData.foods()
         if (database.foodDao().count() == 0) {
-            val foods = loadFoodsFromAssets() ?: defaultFoods
-            insertFoods(foods)
-            Log.i(TAG, "Продукты засеяны: ${foods.size} записей")
+            insertFoods(allSeeds)
+            Log.i(TAG, "Продукты засеяны: ${allSeeds.size} записей")
         } else {
-            // При обновлении приложения досеиваем новые стандартные продукты без изменения пользовательских данных
-            database.withTransaction {
-                defaultFoods.forEach { food ->
-                    if (database.foodDao().findByName(food.name) == null) {
-                        database.foodDao().insert(food)
-                    }
-                }
+            // При обновлении приложения досеиваем новые продукты из assets и SeedData без изменения пользовательских данных
+            val existingNames = database.foodDao().getAllNames().toHashSet()
+            val missing = allSeeds.filter { it.name !in existingNames }
+            if (missing.isNotEmpty()) {
+                insertFoods(missing)
+                Log.i(TAG, "Досеяно новых продуктов: ${missing.size} записей")
             }
         }
         if (database.activityDao().count() == 0) {

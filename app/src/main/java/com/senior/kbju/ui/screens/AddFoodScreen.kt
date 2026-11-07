@@ -19,6 +19,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.IconButton
 import com.senior.kbju.ui.components.ModernCard
 import com.senior.kbju.ui.theme.AccentBlueLight
@@ -257,6 +258,9 @@ private fun CatalogContent(viewModel: AddFoodViewModel) {
     val query by viewModel.searchQuery.collectAsState()
     val simpleFoods by viewModel.simpleFoods.collectAsState()
     val userRecipes by viewModel.userRecipes.collectAsState()
+    val isSearchingOnline by viewModel.isSearchingOnline.collectAsState()
+    val onlineResults by viewModel.onlineSearchResults.collectAsState()
+    val onlineError by viewModel.onlineSearchError.collectAsState()
 
     // Лаунчер для распознавания речи (офлайн/онлайн системный ввод Android)
     val voiceLauncher = rememberLauncherForActivityResult(
@@ -370,6 +374,69 @@ private fun CatalogContent(viewModel: AddFoodViewModel) {
                             )
                             HorizontalDivider(thickness = 1.dp, color = Color(0xFFDDDDDD))
                         }
+                    }
+                }
+
+                if (query.trim().length >= 2) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    if (isSearchingOnline) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = AccentGreen)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(text = "Ищем в интернет-базе...", fontSize = 16.sp, color = TextMuted)
+                        }
+                    } else if (onlineResults.isNotEmpty()) {
+                        Text(
+                            text = "Результаты из интернета (Open Food Facts):",
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = AccentBlue,
+                            modifier = Modifier.padding(top = 10.dp, bottom = 6.dp)
+                        )
+                        onlineResults.forEach { onlineFood ->
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { viewModel.selectOnlineFood(onlineFood) }
+                                    .padding(vertical = 10.dp)
+                            ) {
+                                Text(
+                                    text = "🌐 ${onlineFood.name}",
+                                    fontSize = 19.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextDark
+                                )
+                                Text(
+                                    text = "на 100 г: ${onlineFood.kcal100.roundToInt()} ккал • Б ${onlineFood.protein100.pretty()} • Ж ${onlineFood.fat100.pretty()} • У ${onlineFood.carbs100.pretty()}",
+                                    fontSize = 16.sp,
+                                    color = Color.DarkGray
+                                )
+                                HorizontalDivider(thickness = 1.dp, color = Color(0xFFDDDDDD))
+                            }
+                        }
+                    } else {
+                        OutlineBigButton(
+                            text = "🌐 НАЙТИ «${query.trim()}» В ИНТЕРНЕТЕ",
+                            onClick = { viewModel.searchOnlineNow() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp)
+                        )
+                    }
+
+                    onlineError?.let { err ->
+                        Text(
+                            text = err,
+                            fontSize = 15.sp,
+                            color = TextMuted,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
                     }
                 }
             }
@@ -559,11 +626,15 @@ private fun LabelContent(viewModel: AddFoodViewModel) {
     // Стабильный файл для снимка с камеры (перезаписывается при каждом фото)
     val photoFile = remember { File(context.cacheDir, "camera_label_photo.jpg") }
     val photoUri = remember {
-        FileProvider.getUriForFile(
-            context,
-            "${context.packageName}.fileprovider",
-            photoFile
-        )
+        try {
+            FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                photoFile
+            )
+        } catch (_: Exception) {
+            null
+        }
     }
 
     fun processOcrImage(uri: Uri) {
@@ -634,7 +705,12 @@ private fun LabelContent(viewModel: AddFoodViewModel) {
 
     val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         if (success) {
-            processOcrImage(photoUri)
+            val uri = photoUri ?: try {
+                FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", photoFile)
+            } catch (_: Exception) { null }
+            if (uri != null) {
+                processOcrImage(uri)
+            }
         }
     }
 
@@ -691,7 +767,8 @@ private fun LabelContent(viewModel: AddFoodViewModel) {
                         try {
                             if (photoFile.exists()) photoFile.delete()
                             photoFile.createNewFile()
-                            cameraLauncher.launch(photoUri)
+                            val uri = photoUri ?: FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", photoFile)
+                            cameraLauncher.launch(uri)
                         } catch (e: Exception) {
                             viewModel.onOcrFailure("Камера недоступна: ${e.localizedMessage}")
                         }

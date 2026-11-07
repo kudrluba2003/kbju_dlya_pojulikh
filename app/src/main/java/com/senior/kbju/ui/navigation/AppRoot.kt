@@ -205,8 +205,10 @@ fun AppRoot() {
                         composable(Routes.PROFILE) {
                             ProfileScreen(
                                 onFinished = {
-                                    navController.navigate(Routes.DASHBOARD) {
-                                        popUpTo(Routes.PROFILE) { inclusive = true }
+                                    if (!navController.popBackStack()) {
+                                        navController.navigate(Routes.DASHBOARD) {
+                                            popUpTo(Routes.PROFILE) { inclusive = true }
+                                        }
                                     }
                                 }
                             )
@@ -229,6 +231,7 @@ fun AppRoot() {
                         }
                         composable(Routes.MORE) {
                             MoreScreen(
+                                onOpenProfile = { navController.navigate(Routes.PROFILE) },
                                 onOpenWater = { navController.navigate(Routes.WATER) },
                                 onOpenWeight = { navController.navigate(Routes.WEIGHT) },
                                 onOpenHistory = { navController.navigate(Routes.HISTORY) },

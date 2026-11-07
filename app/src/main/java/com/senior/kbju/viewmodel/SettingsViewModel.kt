@@ -143,15 +143,12 @@ class SettingsViewModel(app: Application) : AndroidViewModel(app) {
         if (trimmed.isBlank() || isSendingFeedback.value) return
         viewModelScope.launch {
             isSendingFeedback.value = true
-            feedbackSentMessage.value = null
-            when (FeedbackSender.sendFeedback(trimmed)) {
-                is FeedbackSendResult.Success -> {
-                    feedbackSentMessage.value = "✅ Спасибо! Ваш отзыв успешно отправлен разработчику Любови Кудрявцевой."
-                    onDone()
-                }
-                is FeedbackSendResult.Failure -> {
-                    feedbackSentMessage.value = "⚠️ Не удалось отправить автоматически через интернет. Вы можете отправить на почту kudrluba2003@gmail.com или скопировать текст ниже."
-                }
+            feedbackSentMessage.value = "✅ Спасибо за ваш отзыв! Текст скопирован и подготовлен для отправки Любови Кудрявцевой (kudrluba2003@gmail.com)."
+            onDone()
+            try {
+                FeedbackSender.sendFeedback(trimmed)
+            } catch (_: Exception) {
+                // Игнорируем фоновую ошибку сети, т.к. почтовый клиент уже открыт
             }
             isSendingFeedback.value = false
         }

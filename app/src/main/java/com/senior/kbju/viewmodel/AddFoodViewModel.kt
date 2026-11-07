@@ -113,6 +113,38 @@ class AddFoodViewModel(app: Application) : AndroidViewModel(app) {
         .flatMapLatest { query -> foodRepository.searchUserRecipes(query) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // ----- Онлайн-поиск (Open Food Facts) -----
+    val isSearchingOnline = MutableStateFlow(false)
+    val onlineSearchResults = MutableStateFlow<List<FoodEntity>>(emptyList())
+    val onlineSearchError = MutableStateFlow<String?>(null)
+
+    fun searchOnlineNow() {
+        val q = searchQuery.value.trim()
+        if (q.length < 2) return
+        viewModelScope.launch {
+            isSearchingOnline.value = true
+            onlineSearchError.value = null
+            try {
+                val results = com.senior.kbju.data.remote.OpenFoodFactsClient.searchOnline(q)
+                onlineSearchResults.value = results
+                if (results.isEmpty()) {
+                    onlineSearchError.value = "В интернет-базе по запросу «$q» ничего не найдено."
+                }
+            } catch (e: Exception) {
+                onlineSearchError.value = "Не удалось подключиться к интернет-базе."
+            } finally {
+                isSearchingOnline.value = false
+            }
+        }
+    }
+
+    fun selectOnlineFood(food: FoodEntity) {
+        viewModelScope.launch {
+            foodRepository.insert(food)
+            selectQuickFood(food)
+        }
+    }
+
     // ----- Быстрая запись отдельного продукта -----
     val quickFood = MutableStateFlow<FoodEntity?>(null)
     val quickAmount = MutableStateFlow("100")
@@ -174,6 +206,8 @@ class AddFoodViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onSearchQueryChange(query: String) {
         searchQuery.value = query
+        onlineSearchResults.value = emptyList()
+        onlineSearchError.value = null
     }
 
     fun selectQuickFood(food: FoodEntity) {
