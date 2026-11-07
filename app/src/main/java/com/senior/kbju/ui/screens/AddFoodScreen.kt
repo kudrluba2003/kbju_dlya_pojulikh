@@ -240,17 +240,35 @@ private fun FoodDateSelector(viewModel: AddFoodViewModel) {
 private fun MealTypeSelector(viewModel: AddFoodViewModel) {
     val currentType by viewModel.selectedMealType.collectAsState()
     SectionTitle(text = "Приём пищи")
-    Row(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        MealType.entries.forEach { type ->
-            BigToggleButton(
-                text = type.label,
-                selected = currentType == type,
-                onClick = { viewModel.selectedMealType.value = type },
-                modifier = Modifier.weight(1f)
-            )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            listOf(MealType.BREAKFAST, MealType.LUNCH).forEach { type ->
+                BigToggleButton(
+                    text = type.label,
+                    selected = currentType == type,
+                    onClick = { viewModel.selectedMealType.value = type },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            listOf(MealType.DINNER, MealType.SNACK).forEach { type ->
+                BigToggleButton(
+                    text = type.label,
+                    selected = currentType == type,
+                    onClick = { viewModel.selectedMealType.value = type },
+                    modifier = Modifier.weight(1f)
+                )
+            }
         }
     }
 }
