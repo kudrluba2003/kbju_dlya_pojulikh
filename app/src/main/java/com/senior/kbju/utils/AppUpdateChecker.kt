@@ -31,7 +31,7 @@ object AppUpdateChecker {
             }
 
             if (connection.responseCode != 200) {
-                return@withContext null
+                return@withContext checkLatestReleaseViaRedirect()
             }
 
             val body = connection.inputStream.bufferedReader().use { it.readText() }
@@ -74,8 +74,36 @@ object AppUpdateChecker {
                 null
             }
         } catch (_: Exception) {
-            null
+            checkLatestReleaseViaRedirect()
         }
+    }
+
+    private fun checkLatestReleaseViaRedirect(): AppUpdateInfo? {
+        try {
+            val url = URL("https://github.com/$GITHUB_REPO/releases/latest")
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                instanceFollowRedirects = false
+                connectTimeout = 7000
+                readTimeout = 7000
+                requestMethod = "HEAD"
+                setRequestProperty("User-Agent", "SeniorKbjuApp")
+            }
+            val location = conn.getHeaderField("Location") ?: return null
+            val rawTag = location.substringAfterLast("/tag/", "").trim()
+            if (rawTag.isBlank()) return null
+            val tagName = rawTag.removePrefix("v").trim()
+            val currentVersion = BuildConfig.VERSION_NAME.removePrefix("v").trim()
+            if (isNewerVersion(remote = tagName, current = currentVersion)) {
+                return AppUpdateInfo(
+                    tagName = tagName,
+                    title = "Версия $rawTag",
+                    releaseNotes = "Новая версия приложения доступна на GitHub.",
+                    releaseUrl = location,
+                    apkDownloadUrl = "https://github.com/$GITHUB_REPO/releases/download/$rawTag/app-release.apk"
+                )
+            }
+        } catch (_: Exception) {}
+        return null
     }
 
     /**
