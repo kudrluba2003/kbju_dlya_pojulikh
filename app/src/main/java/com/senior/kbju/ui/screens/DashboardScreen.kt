@@ -58,6 +58,7 @@ import java.util.Locale
 fun DashboardScreen(
     onEditProfile: () -> Unit,
     onAddFood: () -> Unit,
+    onOpenWeight: () -> Unit = {},
     viewModel: DashboardViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -341,12 +342,15 @@ fun DashboardScreen(
             else -> "До цели: +${(-diffToTarget).pretty()} кг"
         }
 
+        // Плашка: Мой вес (кликабельная - открывает ввод веса)
         ModernCard(
             shape = RoundedCornerShape(18.dp),
             backgroundColor = SurfaceWhite,
             borderColor = AccentGreenBorder,
             elevation = 1.dp,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onOpenWeight() }
         ) {
             Column(
                 modifier = Modifier

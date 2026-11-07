@@ -46,5 +46,7 @@ class FoodRepository(private val dao: FoodDao) {
 
     suspend fun insert(food: FoodEntity): Long = dao.insert(food)
 
+    suspend fun update(food: FoodEntity) = dao.update(food)
+
     suspend fun count(): Int = dao.count()
 }

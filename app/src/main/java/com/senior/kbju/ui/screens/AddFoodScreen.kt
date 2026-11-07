@@ -3,6 +3,7 @@ package com.senior.kbju.ui.screens
 import android.app.Activity
 import android.app.DatePickerDialog
 import android.content.Intent
+import android.graphics.Bitmap
 import android.net.Uri
 import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -15,6 +16,8 @@ import java.io.File
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlin.coroutines.resume
+import kotlinx.coroutines.suspendCancellableCoroutine
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -637,67 +640,70 @@ private fun LabelContent(viewModel: AddFoodViewModel) {
         }
     }
 
+    suspend fun runOcrOnBitmap(recognizer: com.google.mlkit.vision.text.TextRecognizer, bitmap: Bitmap): String =
+        suspendCancellableCoroutine { continuation ->
+            val image = InputImage.fromBitmap(bitmap, 0)
+            recognizer.process(image)
+                .addOnSuccessListener { visionText ->
+                    if (continuation.isActive) continuation.resume(visionText.text)
+                }
+                .addOnFailureListener {
+                    if (continuation.isActive) continuation.resume("")
+                }
+        }
+
     fun processOcrImage(uri: Uri) {
         isProcessingOcr = true
         scope.launch(Dispatchers.Default) {
             try {
-                // Масштабируем фото с высоким разрешением и исправляем поворот по EXIF
-                val scaledBitmap = ImageUtils.loadRotatedScaledBitmap(context, uri)
-                val image = if (scaledBitmap != null) {
-                    InputImage.fromBitmap(scaledBitmap, 0)
-                } else {
-                    InputImage.fromFilePath(context, uri)
+                // 1. Загружаем изображение с оптимальным разрешением для OCR и правильной ориентацией
+                val originalBitmap = ImageUtils.loadRotatedScaledBitmap(context, uri, maxDimension = 1920)
+                if (originalBitmap == null) {
+                    withContext(Dispatchers.Main) {
+                        isProcessingOcr = false
+                        viewModel.onOcrFailure("Не удалось открыть фото")
+                    }
+                    return@launch
                 }
 
                 val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
-                recognizer.process(image)
-                    .addOnSuccessListener { visionText ->
-                        val parsed = NutritionOcrParser.parse(visionText.text)
-                        if (parsed.hasAnyData || scaledBitmap == null) {
-                            isProcessingOcr = false
-                            viewModel.onOcrTextRecognized(visionText.text)
-                        } else {
-                            // Если КБЖУ не найдены при текущей ориентации, проверяем поворот на 90 градусов (для фото боком)
-                            val rotated90 = ImageUtils.rotateBitmap(scaledBitmap, 90f)
-                            recognizer.process(InputImage.fromBitmap(rotated90, 0))
-                                .addOnSuccessListener { r90Text ->
-                                    val r90Parsed = NutritionOcrParser.parse(r90Text.text)
-                                    if (r90Parsed.hasAnyData) {
-                                        isProcessingOcr = false
-                                        viewModel.onOcrTextRecognized(r90Text.text)
-                                    } else {
-                                        // Пробуем 270 градусов
-                                        val rotated270 = ImageUtils.rotateBitmap(scaledBitmap, 270f)
-                                        recognizer.process(InputImage.fromBitmap(rotated270, 0))
-                                            .addOnSuccessListener { r270Text ->
-                                                isProcessingOcr = false
-                                                val r270Parsed = NutritionOcrParser.parse(r270Text.text)
-                                                if (r270Parsed.hasAnyData) {
-                                                    viewModel.onOcrTextRecognized(r270Text.text)
-                                                } else {
-                                                    viewModel.onOcrTextRecognized(visionText.text)
-                                                }
-                                            }
-                                            .addOnFailureListener {
-                                                isProcessingOcr = false
-                                                viewModel.onOcrTextRecognized(visionText.text)
-                                            }
-                                    }
-                                }
-                                .addOnFailureListener {
-                                    isProcessingOcr = false
-                                    viewModel.onOcrTextRecognized(visionText.text)
-                                }
-                        }
-                    }
-                    .addOnFailureListener { e ->
-                        isProcessingOcr = false
-                        viewModel.onOcrFailure("Не удалось прочитать текст: ${e.localizedMessage ?: "ошибка фото"}")
-                    }
+
+                // Проход 1: исходный снимок
+                val pass1Text = runOcrOnBitmap(recognizer, originalBitmap)
+                var result = NutritionOcrParser.parse(pass1Text)
+
+                // Проход 2: если найдены не все параметры, пробуем режим повышенной контрастности (устраняет блики и тени)
+                if (!result.isComplete) {
+                    val enhancedBitmap = ImageUtils.enhanceContrastForOcr(originalBitmap)
+                    val pass2Text = runOcrOnBitmap(recognizer, enhancedBitmap)
+                    val pass2Parsed = NutritionOcrParser.parse(pass2Text)
+                    result = result.mergeWith(pass2Parsed)
+                }
+
+                // Проход 3: если всё ещё не хватает данных, проверяем поворот на 90 градусов (упаковка сфотографирована боком)
+                if (!result.isComplete) {
+                    val rotated90 = ImageUtils.rotateBitmap(originalBitmap, 90f)
+                    val pass3Text = runOcrOnBitmap(recognizer, rotated90)
+                    val pass3Parsed = NutritionOcrParser.parse(pass3Text)
+                    result = result.mergeWith(pass3Parsed)
+                }
+
+                // Проход 4: проверяем поворот на 270 градусов
+                if (!result.isComplete) {
+                    val rotated270 = ImageUtils.rotateBitmap(originalBitmap, 270f)
+                    val pass4Text = runOcrOnBitmap(recognizer, rotated270)
+                    val pass4Parsed = NutritionOcrParser.parse(pass4Text)
+                    result = result.mergeWith(pass4Parsed)
+                }
+
+                withContext(Dispatchers.Main) {
+                    isProcessingOcr = false
+                    viewModel.applyParsedNutrition(result)
+                }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     isProcessingOcr = false
-                    viewModel.onOcrFailure("Не удалось открыть изображение")
+                    viewModel.onOcrFailure("Не удалось прочитать текст: ${e.localizedMessage ?: "ошибка фото"}")
                 }
             }
         }
@@ -863,6 +869,15 @@ private fun LabelContent(viewModel: AddFoodViewModel) {
         },
         color = AccentGreen
     )
+    if (!isAddingToRecipe) {
+        OutlineBigButton(
+            text = "💾 ТОЛЬКО СОХРАНИТЬ В БАЗУ",
+            onClick = {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                viewModel.saveFoodToCatalogOnly()
+            }
+        )
+    }
 }
 
 @Composable

@@ -216,7 +216,8 @@ fun AppRoot() {
                         composable(Routes.DASHBOARD) {
                             DashboardScreen(
                                 onEditProfile = { navController.navigate(Routes.PROFILE) },
-                                onAddFood = { navController.navigate(Routes.ADD_FOOD) }
+                                onAddFood = { navController.navigate(Routes.ADD_FOOD) },
+                                onOpenWeight = { navController.navigate(Routes.WEIGHT) }
                             )
                         }
                         composable(Routes.NUTRITION) {
@@ -245,7 +246,11 @@ fun AppRoot() {
                         }
                         composable(Routes.WEIGHT) {
                             WeightScreen(
-                                onFinished = { navController.navigate(Routes.MORE) { popUpTo(Routes.MORE) { inclusive = false } } }
+                                onFinished = {
+                                    if (!navController.popBackStack()) {
+                                        navController.navigate(Routes.DASHBOARD)
+                                    }
+                                }
                             )
                         }
                         composable(Routes.HISTORY) {

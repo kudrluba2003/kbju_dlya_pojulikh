@@ -286,4 +286,66 @@ class NutritionOcrParserTest {
         assertEquals(null, parsed.fat)
         assertEquals(20.2, parsed.carbs ?: 0.0, 0.01)
     }
+
+    @Test
+    fun testGostFormatCommaGramsColon() {
+        // Стандартный формат ГОСТ РФ: «Белки, г:», «Жиры, г:», «Углеводы, г:»
+        val ocr = """
+            ГОСТ 31450-2013
+            Пищевая ценность 100 г:
+            Белки, г: 3,0
+            Жиры, г: 3,2
+            Углеводы, г: 4,7
+            Энергетическая ценность, ккал: 59,0
+        """.trimIndent()
+        val parsed = NutritionOcrParser.parse(ocr)
+        assertEquals(59.0, parsed.kcal ?: 0.0, 0.01)
+        assertEquals(3.0, parsed.protein ?: 0.0, 0.01)
+        assertEquals(3.2, parsed.fat ?: 0.0, 0.01)
+        assertEquals(4.7, parsed.carbs ?: 0.0, 0.01)
+    }
+
+    @Test
+    fun testParenthesesAndSlashesUnits() {
+        val ocr = """
+            ПИЩЕВАЯ ЦЕННОСТЬ В 100Г:
+            Белки (г) - 8.5
+            Жиры (г) - 1.2
+            Углеводы (г) - 72.0
+            Энергетическая ценность, ккал/100г: 330
+        """.trimIndent()
+        val parsed = NutritionOcrParser.parse(ocr)
+        assertEquals(330.0, parsed.kcal ?: 0.0, 0.01)
+        assertEquals(8.5, parsed.protein ?: 0.0, 0.01)
+        assertEquals(1.2, parsed.fat ?: 0.0, 0.01)
+        assertEquals(72.0, parsed.carbs ?: 0.0, 0.01)
+    }
+
+    @Test
+    fun testKcalWithParenthesesAndNoKjConfusion() {
+        val ocr = """
+            Калорийность (ккал): 250
+            Белки, г/100г: 12.0
+            Жиры, г/100г: 4.5
+            Углеводы, г/100г: 58.0
+        """.trimIndent()
+        val parsed = NutritionOcrParser.parse(ocr)
+        assertEquals(250.0, parsed.kcal ?: 0.0, 0.01)
+        assertEquals(12.0, parsed.protein ?: 0.0, 0.01)
+        assertEquals(4.5, parsed.fat ?: 0.0, 0.01)
+        assertEquals(58.0, parsed.carbs ?: 0.0, 0.01)
+    }
+
+    @Test
+    fun testParsedNutritionMerge() {
+        val p1 = ParsedNutrition(kcal = 250.0, protein = null, fat = 3.0, carbs = null)
+        val p2 = ParsedNutrition(kcal = null, protein = 14.0, fat = 3.2, carbs = 48.0)
+        val merged = p1.mergeWith(p2)
+
+        assertEquals(250.0, merged.kcal ?: 0.0, 0.01)
+        assertEquals(14.0, merged.protein ?: 0.0, 0.01)
+        assertEquals(3.0, merged.fat ?: 0.0, 0.01) // Первое сохранено
+        assertEquals(48.0, merged.carbs ?: 0.0, 0.01)
+        assertTrue(merged.isComplete)
+    }
 }

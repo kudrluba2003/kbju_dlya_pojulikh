@@ -90,6 +90,9 @@ interface FoodDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(food: FoodEntity): Long
 
+    @androidx.room.Update
+    suspend fun update(food: FoodEntity)
+
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertAll(foods: List<FoodEntity>)
 

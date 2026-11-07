@@ -10,6 +10,7 @@ import com.senior.kbju.data.model.MealType
 import com.senior.kbju.utils.Nutrients
 import com.senior.kbju.utils.NutritionMath
 import com.senior.kbju.utils.NutritionOcrParser
+import com.senior.kbju.utils.ParsedNutrition
 import com.senior.kbju.utils.parseNumber
 import com.senior.kbju.utils.pretty
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -162,22 +163,28 @@ class AddFoodViewModel(app: Application) : AndroidViewModel(app) {
     val ocrStatus = MutableStateFlow<String?>(null)
     val isOcrProcessing = MutableStateFlow(false)
 
-    fun onOcrTextRecognized(rawText: String) {
-        val parsed = NutritionOcrParser.parse(rawText)
+    fun applyParsedNutrition(parsed: ParsedNutrition) {
         if (parsed.hasAnyData) {
             parsed.kcal?.let { labelKcal.value = it.pretty() }
             parsed.protein?.let { labelProtein.value = it.pretty() }
             parsed.fat?.let { labelFat.value = it.pretty() }
             parsed.carbs?.let { labelCarbs.value = it.pretty() }
+            if (labelName.value.isBlank() && !parsed.suggestedName.isNullOrBlank()) {
+                labelName.value = parsed.suggestedName
+            }
             val foundList = mutableListOf<String>()
-            if (parsed.kcal != null) foundList.add("калории")
-            if (parsed.protein != null) foundList.add("белки")
-            if (parsed.fat != null) foundList.add("жиры")
-            if (parsed.carbs != null) foundList.add("углеводы")
-            ocrStatus.value = "Найдено с этикетки: ${foundList.joinToString(", ")}. Проверьте значения ниже."
+            if (parsed.kcal != null) foundList.add("ккал: ${parsed.kcal.pretty()}")
+            if (parsed.protein != null) foundList.add("белки: ${parsed.protein.pretty()} г")
+            if (parsed.fat != null) foundList.add("жиры: ${parsed.fat.pretty()} г")
+            if (parsed.carbs != null) foundList.add("углеводы: ${parsed.carbs.pretty()} г")
+            ocrStatus.value = "✓ Распознано: ${foundList.joinToString(", ")}. Проверьте поля ниже."
         } else {
             ocrStatus.value = "КБЖУ не найдены на фото. Сфотографируйте ближе или введите вручную."
         }
+    }
+
+    fun onOcrTextRecognized(rawText: String) {
+        applyParsedNutrition(NutritionOcrParser.parse(rawText))
     }
 
     fun onOcrFailure(message: String) {
@@ -468,6 +475,14 @@ class AddFoodViewModel(app: Application) : AndroidViewModel(app) {
                     )
                 )
             } else {
+                foodRepository.update(
+                    existing.copy(
+                        kcal100 = kcalValue,
+                        protein100 = protein,
+                        fat100 = fat,
+                        carbs100 = carbs
+                    )
+                )
                 existing.id
             }
             val savedFood = foodRepository.findByName(name) ?: FoodEntity(
@@ -511,7 +526,52 @@ class AddFoodViewModel(app: Application) : AndroidViewModel(app) {
                     mealType = selectedMealType.value.name
                 )
             )
-            savedMessage.value = "«$name» (${selectedMealType.value.label}) — ${nutrition.kcal.roundToInt()} ккал. Записали!"
+            savedMessage.value = "«$name» (${selectedMealType.value.label}) — ${nutrition.kcal.roundToInt()} ккал. Записали в дневник и сохранили в базу!"
+            step.value = AddFoodStep.Done
+        }
+    }
+
+    fun saveFoodToCatalogOnly() {
+        viewModelScope.launch {
+            val name = labelName.value.trim()
+            val kcal = parseNumber(labelKcal.value)
+            val protein = parseNumber(labelProtein.value) ?: 0.0
+            val fat = parseNumber(labelFat.value) ?: 0.0
+            val carbs = parseNumber(labelCarbs.value) ?: 0.0
+
+            labelError.value = when {
+                name.isEmpty() -> "Напишите название продукта для сохранения в базу"
+                kcal == null || kcal < 0.0 -> "Введите калории на 100 г числом"
+                else -> null
+            }
+            val kcalValue = kcal ?: return@launch
+            if (name.isEmpty() || kcalValue < 0.0) return@launch
+
+            val existing = foodRepository.findByName(name)
+            if (existing == null) {
+                foodRepository.insert(
+                    FoodEntity(
+                        name = name,
+                        kcal100 = kcalValue,
+                        protein100 = protein,
+                        fat100 = fat,
+                        carbs100 = carbs,
+                        category = "С этикетки",
+                        isUserCreated = true
+                    )
+                )
+            } else {
+                foodRepository.update(
+                    existing.copy(
+                        kcal100 = kcalValue,
+                        protein100 = protein,
+                        fat100 = fat,
+                        carbs100 = carbs
+                    )
+                )
+            }
+
+            savedMessage.value = "Продукт «$name» сохранён в вашей базе продуктов!"
             step.value = AddFoodStep.Done
         }
     }
