@@ -8,8 +8,11 @@ import com.senior.kbju.data.local.entity.ActivityLogEntity
 import com.senior.kbju.data.local.entity.MealLogEntity
 import com.senior.kbju.data.model.MealType
 import com.senior.kbju.data.model.UserProfile
+import com.senior.kbju.utils.AppUpdateChecker
+import com.senior.kbju.utils.AppUpdateInfo
 import com.senior.kbju.utils.DailyTargets
 import com.senior.kbju.utils.NutritionMath
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -62,6 +65,34 @@ class DashboardViewModel(app: Application) : AndroidViewModel(app) {
 
     private val diaryRepository = (app as KbjuApp).diaryRepository
     private val userPreferences = (app as KbjuApp).userPreferencesRepository
+
+    val availableUpdate = MutableStateFlow<AppUpdateInfo?>(null)
+    val isCheckingUpdate = MutableStateFlow(false)
+    val updateCheckMessage = MutableStateFlow<String?>(null)
+
+    init {
+        checkForUpdates(silent = true)
+    }
+
+    fun checkForUpdates(silent: Boolean = false) {
+        viewModelScope.launch {
+            isCheckingUpdate.value = true
+            if (!silent) updateCheckMessage.value = null
+            try {
+                val update = AppUpdateChecker.checkLatestRelease()
+                availableUpdate.value = update
+                if (!silent && update == null) {
+                    updateCheckMessage.value = "У вас самая актуальная версия (${com.senior.kbju.BuildConfig.VERSION_NAME})"
+                }
+            } catch (e: Exception) {
+                if (!silent) {
+                    updateCheckMessage.value = "Не удалось проверить обновления: проверьте интернет"
+                }
+            } finally {
+                isCheckingUpdate.value = false
+            }
+        }
+    }
 
     val uiState: StateFlow<DashboardUiState> = combine(
         userPreferences.userProfile,

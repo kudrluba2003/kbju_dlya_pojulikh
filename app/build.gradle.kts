@@ -13,8 +13,8 @@ android {
         applicationId = "com.senior.kbju"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.1"
+        versionCode = 3
+        versionName = "1.2"
     }
 
     ksp {
@@ -27,6 +27,10 @@ android {
             storePassword = "senior_kbju_pass"
             keyAlias = "senior_kbju"
             keyPassword = "senior_kbju_pass"
+            enableV1Signing = true
+            enableV2Signing = true
+            enableV3Signing = true
+            enableV4Signing = false
         }
     }
 

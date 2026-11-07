@@ -27,6 +27,15 @@ interface FoodDao {
     @Insert
     suspend fun insertAll(foods: List<FoodEntity>)
 
+    @Query("SELECT * FROM food WHERE isUserCreated = 0 AND name LIKE '%' || :query || '%' ORDER BY name LIMIT 50")
+    fun searchSimple(query: String): Flow<List<FoodEntity>>
+
+    @Query("SELECT * FROM food WHERE isUserCreated = 1 AND name LIKE '%' || :query || '%' ORDER BY id DESC")
+    fun searchUserRecipes(query: String): Flow<List<FoodEntity>>
+
+    @Query("DELETE FROM food WHERE id = :id AND isUserCreated = 1")
+    suspend fun deleteUserFood(id: Long)
+
     @Query("SELECT * FROM food WHERE isUserCreated = 1")
     suspend fun getUserCreatedFoods(): List<FoodEntity>
 }

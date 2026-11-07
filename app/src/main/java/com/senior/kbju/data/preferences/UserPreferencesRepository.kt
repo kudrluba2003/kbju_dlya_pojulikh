@@ -28,6 +28,31 @@ class UserPreferencesRepository(private val context: Context) {
         val START_WEIGHT_KG = doublePreferencesKey("start_weight_kg")
         val TARGET_WEIGHT_KG = doublePreferencesKey("target_weight_kg")
         val TARGET_WATER_GLASSES = intPreferencesKey("target_water_glasses")
+        val LUNCH_REMINDER_HOUR = intPreferencesKey("lunch_reminder_hour")
+        val LUNCH_REMINDER_MINUTE = intPreferencesKey("lunch_reminder_minute")
+        val DINNER_REMINDER_HOUR = intPreferencesKey("dinner_reminder_hour")
+        val DINNER_REMINDER_MINUTE = intPreferencesKey("dinner_reminder_minute")
+    }
+
+    val lunchReminderTime: Flow<Pair<Int, Int>> = context.userSettings.data.map { prefs ->
+        val hour = prefs[Keys.LUNCH_REMINDER_HOUR] ?: 13
+        val min = prefs[Keys.LUNCH_REMINDER_MINUTE] ?: 0
+        hour to min
+    }
+
+    val dinnerReminderTime: Flow<Pair<Int, Int>> = context.userSettings.data.map { prefs ->
+        val hour = prefs[Keys.DINNER_REMINDER_HOUR] ?: 19
+        val min = prefs[Keys.DINNER_REMINDER_MINUTE] ?: 0
+        hour to min
+    }
+
+    suspend fun saveReminderTimes(lunchHour: Int, lunchMin: Int, dinnerHour: Int, dinnerMin: Int) {
+        context.userSettings.edit { prefs ->
+            prefs[Keys.LUNCH_REMINDER_HOUR] = lunchHour
+            prefs[Keys.LUNCH_REMINDER_MINUTE] = lunchMin
+            prefs[Keys.DINNER_REMINDER_HOUR] = dinnerHour
+            prefs[Keys.DINNER_REMINDER_MINUTE] = dinnerMin
+        }
     }
 
     val remindersEnabled: Flow<Boolean> = context.userSettings.data.map { prefs ->

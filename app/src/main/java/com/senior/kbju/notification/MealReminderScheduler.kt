@@ -14,9 +14,15 @@ object MealReminderScheduler {
     const val WORK_LUNCH = "meal_reminder_lunch"
     const val WORK_DINNER = "meal_reminder_dinner"
 
-    fun scheduleAll(context: Context) {
-        scheduleDailyReminder(context, WORK_LUNCH, targetHour = 13, targetMinute = 0)
-        scheduleDailyReminder(context, WORK_DINNER, targetHour = 19, targetMinute = 0)
+    fun scheduleAll(
+        context: Context,
+        lunchHour: Int = 13,
+        lunchMinute: Int = 0,
+        dinnerHour: Int = 19,
+        dinnerMinute: Int = 0
+    ) {
+        scheduleDailyReminder(context, WORK_LUNCH, targetHour = lunchHour, targetMinute = lunchMinute)
+        scheduleDailyReminder(context, WORK_DINNER, targetHour = dinnerHour, targetMinute = dinnerMinute)
     }
 
     fun cancelAll(context: Context) {

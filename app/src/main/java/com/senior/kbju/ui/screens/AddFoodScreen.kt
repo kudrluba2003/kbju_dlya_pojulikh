@@ -121,8 +121,10 @@ private fun MealTypeSelector(viewModel: AddFoodViewModel) {
 
 @Composable
 private fun CatalogContent(viewModel: AddFoodViewModel) {
+    val currentTab by viewModel.catalogTab.collectAsState()
     val query by viewModel.searchQuery.collectAsState()
-    val results by viewModel.searchResults.collectAsState()
+    val simpleFoods by viewModel.simpleFoods.collectAsState()
+    val userRecipes by viewModel.userRecipes.collectAsState()
 
     // Лаунчер для распознавания речи (офлайн/онлайн системный ввод Android)
     val voiceLauncher = rememberLauncherForActivityResult(
@@ -143,72 +145,173 @@ private fun CatalogContent(viewModel: AddFoodViewModel) {
     // Выбор приёма пищи (Завтрак / Обед / Ужин / Перекус)
     MealTypeSelector(viewModel)
 
-    SectionTitle(text = "Поиск в базе продуктов")
-    PlainTextField(
-        label = "Название продукта",
-        value = query,
-        onValueChange = viewModel::onSearchQueryChange
-    )
-
-    OutlineBigButton(
-        text = "🎤 СКАЗАТЬ ГОЛОСОМ",
-        onClick = {
-            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ru-RU")
-                putExtra(RecognizerIntent.EXTRA_PROMPT, "Назовите продукт (например «Гречка» или «Яблоко»)")
-            }
-            try {
-                voiceLauncher.launch(intent)
-            } catch (_: Exception) {}
-        }
-    )
-
-    Text(text = "Нажмите на продукт, чтобы записать порцию:", fontSize = 18.sp)
-
-    LazyColumn(modifier = Modifier.fillMaxWidth().height(280.dp)) {
-        if (results.isEmpty()) {
-            item {
-                Text(
-                    text = "Ничего не нашлось. Попробуйте сказать иначе или введите с этикетки ниже.",
-                    fontSize = 18.sp,
-                    modifier = Modifier.padding(vertical = 12.dp)
-                )
-            }
-        }
-        items(results, key = { it.id }) { food ->
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { viewModel.selectQuickFood(food) }
-                    .padding(vertical = 10.dp)
-            ) {
-                Text(
-                    text = if (food.isUserCreated) "${food.name} (ваш продукт)" else food.name,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "на 100 г: ${food.kcal100.roundToInt()} ккал • Б ${food.protein100.pretty()} • Ж ${food.fat100.pretty()} • У ${food.carbs100.pretty()}" +
-                        (food.category?.let { " • $it" } ?: ""),
-                    fontSize = 18.sp,
-                    color = Color.DarkGray
-                )
-                HorizontalDivider(thickness = 1.dp, color = Color(0xFFDDDDDD))
-            }
+    // Переключение между простыми продуктами и своими рецептами
+    SectionTitle(text = "Что вы хотите добавить?")
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        com.senior.kbju.viewmodel.FoodCatalogTab.entries.forEach { tab ->
+            BigToggleButton(
+                text = tab.label,
+                selected = currentTab == tab,
+                onClick = { viewModel.catalogTab.value = tab },
+                modifier = Modifier.weight(1f)
+            )
         }
     }
 
-    SectionTitle(text = "Другие варианты записи")
-    BigButton(
-        text = "ВВЕСТИ С ЭТИКЕТКИ",
-        onClick = viewModel::chooseLabelMode,
-        color = AccentBlue
-    )
-    OutlineBigButton(
-        text = "СОБРАТЬ СЛОЖНОЕ БЛЮДО",
-        onClick = viewModel::chooseRecipeMode
-    )
+    if (currentTab == com.senior.kbju.viewmodel.FoodCatalogTab.SIMPLE) {
+        SectionTitle(text = "Поиск в базе простых продуктов")
+        PlainTextField(
+            label = "Название продукта",
+            value = query,
+            onValueChange = viewModel::onSearchQueryChange
+        )
+
+        OutlineBigButton(
+            text = "🎤 СКАЗАТЬ ГОЛОСОМ",
+            onClick = {
+                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, "ru-RU")
+                    putExtra(RecognizerIntent.EXTRA_PROMPT, "Назовите продукт (например «Гречка» или «Яблоко»)")
+                }
+                try {
+                    voiceLauncher.launch(intent)
+                } catch (_: Exception) {}
+            }
+        )
+
+        Text(text = "Нажмите на продукт, чтобы записать порцию:", fontSize = 18.sp)
+
+        LazyColumn(modifier = Modifier.fillMaxWidth().height(280.dp)) {
+            if (simpleFoods.isEmpty()) {
+                item {
+                    Text(
+                        text = "Ничего не нашлось. Попробуйте сказать иначе или введите с этикетки ниже.",
+                        fontSize = 18.sp,
+                        modifier = Modifier.padding(vertical = 12.dp)
+                    )
+                }
+            }
+            items(simpleFoods, key = { it.id }) { food ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { viewModel.selectQuickFood(food) }
+                        .padding(vertical = 10.dp)
+                ) {
+                    Text(
+                        text = food.name,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "на 100 г: ${food.kcal100.roundToInt()} ккал • Б ${food.protein100.pretty()} • Ж ${food.fat100.pretty()} • У ${food.carbs100.pretty()}" +
+                            (food.category?.let { " • $it" } ?: ""),
+                        fontSize = 18.sp,
+                        color = Color.DarkGray
+                    )
+                    HorizontalDivider(thickness = 1.dp, color = Color(0xFFDDDDDD))
+                }
+            }
+        }
+
+        SectionTitle(text = "Другие варианты записи")
+        BigButton(
+            text = "ВВЕСТИ С ЭТИКЕТКИ",
+            onClick = viewModel::chooseLabelMode,
+            color = AccentBlue
+        )
+        OutlineBigButton(
+            text = "🍳 СОБРАТЬ СЛОЖНОЕ БЛЮДО",
+            onClick = viewModel::chooseRecipeMode
+        )
+    } else {
+        // Раздел «Мои рецепты»
+        SectionTitle(text = "Мои рецепты и блюда")
+        Card(
+            shape = RoundedCornerShape(10.dp),
+            colors = CardDefaults.cardColors(containerColor = SoftGray),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "🔒 Ваши рецепты и блюда сохраняются только на этом устройстве и не передаются другим пользователям.",
+                fontSize = 16.sp,
+                color = Color.DarkGray,
+                modifier = Modifier.padding(12.dp)
+            )
+        }
+
+        PlainTextField(
+            label = "Поиск среди моих рецептов",
+            value = query,
+            onValueChange = viewModel::onSearchQueryChange
+        )
+
+        if (userRecipes.isEmpty()) {
+            Card(
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "У вас пока нет сохранённых рецептов.",
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "Вы можете собрать сложное блюдо из нескольких ингредиентов, и оно сохранится здесь для быстрого выбора в будущем.",
+                        fontSize = 17.sp,
+                        color = Color.DarkGray
+                    )
+                }
+            }
+        } else {
+            Text(text = "Нажмите на рецепт, чтобы записать съеденную порцию:", fontSize = 18.sp)
+            LazyColumn(modifier = Modifier.fillMaxWidth().height(280.dp)) {
+                items(userRecipes, key = { it.id }) { recipe ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable { viewModel.selectQuickFood(recipe) }
+                        ) {
+                            Text(
+                                text = recipe.name,
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "на 100 г: ${recipe.kcal100.roundToInt()} ккал • Б ${recipe.protein100.pretty()} • Ж ${recipe.fat100.pretty()} • У ${recipe.carbs100.pretty()}",
+                                fontSize = 17.sp,
+                                color = Color.DarkGray
+                            )
+                        }
+                        TextButton(
+                            onClick = { viewModel.deleteUserRecipe(recipe) }
+                        ) {
+                            Text(text = "🗑️ Удалить", fontSize = 16.sp, color = ErrorRed)
+                        }
+                    }
+                    HorizontalDivider(thickness = 1.dp, color = Color(0xFFDDDDDD))
+                }
+            }
+        }
+
+        BigButton(
+            text = "🍳 СОБРАТЬ НОВОЕ БЛЮДО",
+            onClick = viewModel::chooseRecipeMode,
+            color = AccentGreen
+        )
+    }
 }
 
 @Composable
@@ -501,14 +604,30 @@ private fun LabelContent(viewModel: AddFoodViewModel) {
 @Composable
 private fun RecipeBuilderContent(viewModel: AddFoodViewModel) {
     val query by viewModel.searchQuery.collectAsState()
-    val results by viewModel.searchResults.collectAsState()
+    val simpleFoods by viewModel.simpleFoods.collectAsState()
     val ingredients by viewModel.ingredients.collectAsState()
     val totalGrams by viewModel.totalGrams.collectAsState()
     val totalKcal by viewModel.totalKcal.collectAsState()
     val error by viewModel.recipeError.collectAsState()
 
     Text(text = "Соберём сложное блюдо", fontSize = 28.sp, fontWeight = FontWeight.Bold)
-    OutlineBigButton(text = "НАЗАД", onClick = viewModel::backToCatalog)
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        OutlineBigButton(
+            text = "НАЗАД В КАТАЛОГ",
+            onClick = viewModel::backToCatalog,
+            modifier = Modifier.weight(1f)
+        )
+        if (ingredients.isNotEmpty()) {
+            OutlineBigButton(
+                text = "ОЧИСТИТЬ",
+                onClick = viewModel::clearRecipeBuilder,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
 
     PlainTextField(
         label = "Найдите ингредиент",
@@ -518,7 +637,7 @@ private fun RecipeBuilderContent(viewModel: AddFoodViewModel) {
     Text(text = "Нажмите на продукт, чтобы добавить его в блюдо:", fontSize = 18.sp)
 
     LazyColumn(modifier = Modifier.fillMaxWidth().height(220.dp)) {
-        if (results.isEmpty()) {
+        if (simpleFoods.isEmpty()) {
             item {
                 Text(
                     text = "Ничего не нашлось. Попробуйте другое слово.",
@@ -527,7 +646,7 @@ private fun RecipeBuilderContent(viewModel: AddFoodViewModel) {
                 )
             }
         }
-        items(results, key = { it.id }) { food ->
+        items(simpleFoods, key = { it.id }) { food ->
             Column(
                 modifier = Modifier
                     .fillMaxWidth()

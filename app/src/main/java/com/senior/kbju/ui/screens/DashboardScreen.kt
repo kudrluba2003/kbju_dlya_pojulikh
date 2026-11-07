@@ -1,5 +1,9 @@
 package com.senior.kbju.ui.screens
 
+import android.content.Intent
+import android.net.Uri
+import com.senior.kbju.BuildConfig
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -59,6 +63,10 @@ fun DashboardScreen(
     viewModel: DashboardViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsState()
+    val availableUpdate by viewModel.availableUpdate.collectAsState()
+    val isCheckingUpdate by viewModel.isCheckingUpdate.collectAsState()
+    val updateCheckMessage by viewModel.updateCheckMessage.collectAsState()
+    val context = LocalContext.current
     val haptic = LocalHapticFeedback.current
 
     if (state.isLoading || state.profile == null) {
@@ -83,6 +91,36 @@ fun DashboardScreen(
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        availableUpdate?.let { update ->
+            Card(
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "🎉 Доступно обновление v${update.tagName}!",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AccentGreen
+                    )
+                    Text(
+                        text = "Новая версия с улучшениями готова к установке.",
+                        fontSize = 16.sp
+                    )
+                    BigButton(
+                        text = "📥 СКАЧАТЬ И ОБНОВИТЬ",
+                        onClick = {
+                            val url = update.apkDownloadUrl ?: update.releaseUrl
+                            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                            context.startActivity(browserIntent)
+                        },
+                        color = AccentGreen
+                    )
+                }
+            }
+        }
+
         Text(
             text = "Сегодня, $dateText",
             fontSize = 24.sp,
@@ -427,6 +465,37 @@ fun DashboardScreen(
                             }
                         }
                     }
+                }
+            }
+        }
+
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = SoftGray),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "Приложение v${BuildConfig.VERSION_NAME}", fontSize = 16.sp, color = Color.DarkGray)
+                    if (isCheckingUpdate) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    }
+                }
+                OutlineBigButton(
+                    text = "🔄 ПРОВЕРИТЬ ОБНОВЛЕНИЯ",
+                    onClick = { viewModel.checkForUpdates(silent = false) }
+                )
+                updateCheckMessage?.let { msg ->
+                    Text(
+                        text = msg,
+                        fontSize = 16.sp,
+                        color = AccentBlue,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         }

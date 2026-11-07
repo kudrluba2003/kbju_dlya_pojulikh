@@ -44,6 +44,13 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
     val isCheckingUpdate = MutableStateFlow(false)
     val updateCheckMessage = MutableStateFlow<String?>(null)
 
+    val lunchHour = MutableStateFlow(13)
+    val lunchMinute = MutableStateFlow(0)
+    val dinnerHour = MutableStateFlow(19)
+    val dinnerMinute = MutableStateFlow(0)
+    val waterCalcExplanation = MutableStateFlow<String?>(null)
+    val feedbackText = MutableStateFlow("")
+
     private data class ParsedInputs(
         val heightCm: Int,
         val weightKg: Double,
@@ -57,6 +64,12 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             crashReport.value = CrashHandler.getLastCrashReport(getApplication())
             remindersEnabled.value = userPreferences.remindersEnabled.first()
+            val (lHour, lMin) = userPreferences.lunchReminderTime.first()
+            lunchHour.value = lHour
+            lunchMinute.value = lMin
+            val (dHour, dMin) = userPreferences.dinnerReminderTime.first()
+            dinnerHour.value = dHour
+            dinnerMinute.value = dMin
             val existing = userPreferences.userProfile.first()
             if (existing != null) {
                 isEditing.value = true
@@ -166,11 +179,61 @@ class ProfileViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             userPreferences.setRemindersEnabled(enabled)
             if (enabled) {
-                MealReminderScheduler.scheduleAll(getApplication())
+                MealReminderScheduler.scheduleAll(
+                    getApplication(),
+                    lunchHour = lunchHour.value,
+                    lunchMinute = lunchMinute.value,
+                    dinnerHour = dinnerHour.value,
+                    dinnerMinute = dinnerMinute.value
+                )
             } else {
                 MealReminderScheduler.cancelAll(getApplication())
             }
         }
+    }
+
+    fun adjustLunchHour(delta: Int) {
+        val newHour = (lunchHour.value + delta).coerceIn(10, 16)
+        lunchHour.value = newHour
+        persistReminderTimes()
+    }
+
+    fun adjustDinnerHour(delta: Int) {
+        val newHour = (dinnerHour.value + delta).coerceIn(16, 22)
+        dinnerHour.value = newHour
+        persistReminderTimes()
+    }
+
+    private fun persistReminderTimes() {
+        viewModelScope.launch {
+            userPreferences.saveReminderTimes(
+                lunchHour.value,
+                lunchMinute.value,
+                dinnerHour.value,
+                dinnerMinute.value
+            )
+            if (remindersEnabled.value) {
+                MealReminderScheduler.scheduleAll(
+                    getApplication(),
+                    lunchHour = lunchHour.value,
+                    lunchMinute = lunchMinute.value,
+                    dinnerHour = dinnerHour.value,
+                    dinnerMinute = dinnerMinute.value
+                )
+            }
+        }
+    }
+
+    fun calculateWaterByWeight() {
+        val w = parseNumberIn(weight.value, 25.0, 300.0)
+        if (w == null) {
+            waterCalcExplanation.value = "Сначала укажите ваш вес выше"
+            return
+        }
+        val ml = kotlin.math.round((w * 30.0)).toInt()
+        val glasses = (ml / 250.0).let { kotlin.math.round(it).toInt() }.coerceIn(4, 16)
+        targetWaterGlasses.value = glasses
+        waterCalcExplanation.value = "По весу ${w.pretty()} кг норма: ~${ml} мл (${glasses} стаканов по 250 мл)"
     }
 
     // Расчёт суточной нормы КБЖУ по формуле Миффлина-Сан Жеора:

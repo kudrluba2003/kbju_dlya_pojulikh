@@ -67,6 +67,11 @@ private fun defaultMealType(): MealType {
     }
 }
 
+enum class FoodCatalogTab(val label: String) {
+    SIMPLE("🍎 Простые продукты"),
+    RECIPES("📖 Мои рецепты")
+}
+
 @OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class AddFoodViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -75,6 +80,7 @@ class AddFoodViewModel(app: Application) : AndroidViewModel(app) {
 
     val step = MutableStateFlow<AddFoodStep>(AddFoodStep.Catalog)
     val selectedMealType = MutableStateFlow(defaultMealType())
+    val catalogTab = MutableStateFlow(FoodCatalogTab.SIMPLE)
 
     // ----- Поиск по каталогу -----
     val searchQuery = MutableStateFlow("")
@@ -82,6 +88,16 @@ class AddFoodViewModel(app: Application) : AndroidViewModel(app) {
     val searchResults: StateFlow<List<FoodEntity>> = searchQuery
         .debounce(200)
         .flatMapLatest { query -> foodRepository.search(query) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val simpleFoods: StateFlow<List<FoodEntity>> = searchQuery
+        .debounce(150)
+        .flatMapLatest { query -> foodRepository.searchSimple(query) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val userRecipes: StateFlow<List<FoodEntity>> = searchQuery
+        .debounce(150)
+        .flatMapLatest { query -> foodRepository.searchUserRecipes(query) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // ----- Быстрая запись отдельного продукта -----
@@ -206,7 +222,23 @@ class AddFoodViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun chooseRecipeMode() {
+        clearRecipeBuilder()
         step.value = AddFoodStep.RecipeBuilder
+    }
+
+    fun clearRecipeBuilder() {
+        ingredients.value = emptyList()
+        dishName.value = ""
+        dishPer100.value = null
+        totalWeight.value = 0.0
+        portionText.value = ""
+        recipeError.value = null
+    }
+
+    fun deleteUserRecipe(food: FoodEntity) {
+        viewModelScope.launch {
+            foodRepository.deleteUserFood(food.id)
+        }
     }
 
     fun backToCatalog() {
@@ -300,6 +332,7 @@ class AddFoodViewModel(app: Application) : AndroidViewModel(app) {
                         protein100 = per.protein,
                         fat100 = per.fat,
                         carbs100 = per.carbs,
+                        category = "Мои рецепты",
                         isUserCreated = true
                     )
                 )
@@ -349,6 +382,7 @@ class AddFoodViewModel(app: Application) : AndroidViewModel(app) {
                         protein100 = protein,
                         fat100 = fat,
                         carbs100 = carbs,
+                        category = "С этикетки",
                         isUserCreated = true
                     )
                 )

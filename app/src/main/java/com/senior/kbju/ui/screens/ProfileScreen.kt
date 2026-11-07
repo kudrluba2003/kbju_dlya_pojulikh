@@ -4,8 +4,10 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import com.senior.kbju.BuildConfig
+import com.senior.kbju.R
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +22,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -32,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -74,6 +80,10 @@ fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewMode
     val availableUpdate by viewModel.availableUpdate.collectAsState()
     val isCheckingUpdate by viewModel.isCheckingUpdate.collectAsState()
     val updateCheckMessage by viewModel.updateCheckMessage.collectAsState()
+    val lunchHour by viewModel.lunchHour.collectAsState()
+    val dinnerHour by viewModel.dinnerHour.collectAsState()
+    val waterCalcExplanation by viewModel.waterCalcExplanation.collectAsState()
+    val feedbackText by viewModel.feedbackText.collectAsState()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
@@ -150,6 +160,14 @@ fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewMode
                 }
             }
         }
+        Image(
+            painter = painterResource(id = R.drawable.app_logo),
+            contentDescription = "Дневник питания",
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(110.dp)
+                .padding(vertical = 4.dp)
+        )
         Text(
             text = if (isEditing) "Ваш профиль" else "Давайте познакомимся",
             fontSize = 30.sp,
@@ -300,6 +318,18 @@ fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewMode
                         )
                     }
                 }
+                OutlineBigButton(
+                    text = "💧 РАССЧИТАТЬ ПО ВЕСУ (30 мл / кг)",
+                    onClick = viewModel::calculateWaterByWeight
+                )
+                waterCalcExplanation?.let { text ->
+                    Text(
+                        text = text,
+                        fontSize = 16.sp,
+                        color = AccentBlue,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
 
@@ -308,32 +338,90 @@ fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewMode
             shape = RoundedCornerShape(12.dp),
             colors = CardDefaults.cardColors(containerColor = SoftGray)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Напоминать о еде",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "В 13:00 (обед) и 19:00 (ужин), чтобы не забыть сделать запись",
-                        fontSize = 16.sp
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Напоминать о еде",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Уведомления об обеде и ужине, чтобы не забыть сделать запись",
+                            fontSize = 16.sp
+                        )
+                    }
+                    Switch(
+                        checked = remindersEnabled,
+                        onCheckedChange = { checked ->
+                            if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                            viewModel.setReminders(checked)
+                        }
                     )
                 }
-                Switch(
-                    checked = remindersEnabled,
-                    onCheckedChange = { checked ->
-                        if (checked && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+
+                if (remindersEnabled) {
+                    HorizontalDivider(thickness = 1.dp, color = Color(0xFFDDDDDD))
+                    Text(text = "Время напоминаний:", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+
+                    // Обед
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Обед: $lunchHour:00",
+                            fontSize = 19.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            BigButton(
+                                text = "➖ 1 ч",
+                                onClick = { viewModel.adjustLunchHour(-1) },
+                                color = Color.LightGray
+                            )
+                            BigButton(
+                                text = "➕ 1 ч",
+                                onClick = { viewModel.adjustLunchHour(1) },
+                                color = AccentBlue
+                            )
                         }
-                        viewModel.setReminders(checked)
                     }
-                )
+
+                    // Ужин
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Ужин: $dinnerHour:00",
+                            fontSize = 19.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            BigButton(
+                                text = "➖ 1 ч",
+                                onClick = { viewModel.adjustDinnerHour(-1) },
+                                color = Color.LightGray
+                            )
+                            BigButton(
+                                text = "➕ 1 ч",
+                                onClick = { viewModel.adjustDinnerHour(1) },
+                                color = AccentBlue
+                            )
+                        }
+                    }
+                }
             }
         }
 
@@ -435,6 +523,52 @@ fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewMode
                         )
                     }
                 }
+            }
+        }
+
+        SectionTitle(text = "Обратная связь и пожелания")
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = SoftGray),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = "✉️ Чего вам не хватает в приложении?",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Напишите, каких продуктов, блюд или функций вам не хватает в приложении. Нажмите кнопку, чтобы отправить письмо напрямую разработчику.",
+                    fontSize = 16.sp,
+                    color = Color.DarkGray
+                )
+                OutlinedTextField(
+                    value = feedbackText,
+                    onValueChange = { viewModel.feedbackText.value = it },
+                    placeholder = { Text("Напишите ваше пожелание...", fontSize = 18.sp) },
+                    modifier = Modifier.fillMaxWidth().height(120.dp),
+                    textStyle = LocalTextStyle.current.copy(fontSize = 18.sp),
+                    shape = RoundedCornerShape(8.dp)
+                )
+                BigButton(
+                    text = "📨 ОТПРАВИТЬ РАЗРАБОТЧИКУ",
+                    onClick = {
+                        val body = feedbackText.trim()
+                        val sendIntent = Intent(Intent.ACTION_SENDTO).apply {
+                            data = Uri.parse("mailto:kudrluba2003@gmail.com")
+                            putExtra(Intent.EXTRA_SUBJECT, "НОВОВВЕДЕНИЕ ПО ПРОСЬБЕ ПОЛЬЗОВАТЕЛЯ")
+                            putExtra(
+                                Intent.EXTRA_TEXT,
+                                "${if (body.isNotBlank()) body else "(Пользователь не указал текст)"}\n\n---\nПриложение: Дневник питания v${BuildConfig.VERSION_NAME} (сборка ${BuildConfig.VERSION_CODE})\nAndroid: ${Build.VERSION.RELEASE}"
+                            )
+                        }
+                        try {
+                            context.startActivity(Intent.createChooser(sendIntent, "Отправить письмо"))
+                        } catch (_: Exception) {}
+                    },
+                    color = AccentGreen
+                )
             }
         }
 
