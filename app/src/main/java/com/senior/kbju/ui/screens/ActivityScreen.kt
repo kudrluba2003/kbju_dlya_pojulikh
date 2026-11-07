@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -23,7 +21,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -31,10 +28,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.senior.kbju.ui.components.BigButton
+import com.senior.kbju.ui.components.ModernCard
 import com.senior.kbju.ui.components.SectionTitle
 import com.senior.kbju.ui.theme.AccentOrange
+import com.senior.kbju.ui.theme.AccentOrangeBorder
+import com.senior.kbju.ui.theme.AccentOrangeLight
+import com.senior.kbju.ui.theme.CardBorder
 import com.senior.kbju.ui.theme.ErrorRed
-import com.senior.kbju.ui.theme.SoftGray
+import com.senior.kbju.ui.theme.SurfaceWhite
+import com.senior.kbju.ui.theme.TextDark
+import com.senior.kbju.ui.theme.TextMuted
 import com.senior.kbju.viewmodel.DashboardViewModel
 import kotlin.math.roundToInt
 
@@ -48,7 +51,7 @@ fun ActivityScreen(
 
     if (state.isLoading || state.profile == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(modifier = Modifier.size(56.dp))
+            CircularProgressIndicator(modifier = Modifier.size(56.dp), color = AccentOrange)
         }
         return
     }
@@ -57,19 +60,21 @@ fun ActivityScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(20.dp),
+            .padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "Физическая активность",
+            text = "🏃 Физическая активность",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             color = AccentOrange
         )
 
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftGray),
+        ModernCard(
+            shape = RoundedCornerShape(22.dp),
+            backgroundColor = AccentOrangeLight,
+            borderColor = AccentOrangeBorder,
+            elevation = 2.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -79,18 +84,19 @@ fun ActivityScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = "Сожжено сегодня:", fontSize = 20.sp, color = Color.DarkGray)
+                Text(text = "Всего сожжено сегодня:", fontSize = 19.sp, color = TextMuted)
                 Text(
                     text = "${state.burnedKcal} ккал",
-                    fontSize = 36.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontSize = 38.sp,
+                    fontWeight = FontWeight.Black,
                     color = AccentOrange
                 )
                 val totalMinutes = state.activities.sumOf { it.minutes }
                 Text(
-                    text = "Всего времени в движении: $totalMinutes мин",
-                    fontSize = 18.sp,
-                    color = Color.DarkGray
+                    text = "Базовый метаболизм ${state.basalMetabolismKcal} ккал + активность ${state.activityBurnedKcal} ккал ($totalMinutes мин)",
+                    fontSize = 15.sp,
+                    color = TextMuted,
+                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
                 )
             }
         }
@@ -101,25 +107,28 @@ fun ActivityScreen(
             color = AccentOrange
         )
 
-        SectionTitle(text = "Занятия за сегодня")
+        SectionTitle(text = "Занятия за день")
         if (state.activities.isEmpty()) {
-            Card(
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = SoftGray),
+            ModernCard(
+                shape = RoundedCornerShape(18.dp),
+                backgroundColor = SurfaceWhite,
+                borderColor = CardBorder,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Пока нет записанной активности за сегодня. Добавьте прогулку, зарядку или домашние дела по кнопке выше.",
-                    fontSize = 18.sp,
-                    color = Color.DarkGray,
-                    modifier = Modifier.padding(16.dp)
+                    text = "Пока нет записанной активности за этот день. Добавьте прогулку, зарядку или домашние дела по кнопке выше.",
+                    fontSize = 17.sp,
+                    color = TextMuted,
+                    modifier = Modifier.padding(18.dp)
                 )
             }
         } else {
             state.activities.forEach { activity ->
-                Card(
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = SoftGray),
+                ModernCard(
+                    shape = RoundedCornerShape(16.dp),
+                    backgroundColor = SurfaceWhite,
+                    borderColor = CardBorder,
+                    elevation = 1.dp,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
@@ -131,17 +140,18 @@ fun ActivityScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = activity.name,
-                                fontSize = 20.sp,
+                                fontSize = 19.sp,
                                 fontWeight = FontWeight.Bold,
+                                color = TextDark,
                                 maxLines = 2
                             )
-                            Text(text = "${activity.minutes} мин", fontSize = 18.sp, color = Color.DarkGray)
+                            Text(text = "${activity.minutes} мин", fontSize = 16.sp, color = TextMuted)
                         }
                         Column(horizontalAlignment = Alignment.End) {
                             Text(
-                                text = "-${activity.kcal.roundToInt()} ккал",
+                                text = "+${activity.kcal.roundToInt()} ккал",
                                 fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
+                                fontWeight = FontWeight.Black,
                                 color = AccentOrange
                             )
                             TextButton(onClick = {
@@ -150,7 +160,7 @@ fun ActivityScreen(
                             }) {
                                 Text(
                                     text = "Удалить",
-                                    fontSize = 17.sp,
+                                    fontSize = 16.sp,
                                     color = ErrorRed,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -161,22 +171,24 @@ fun ActivityScreen(
             }
         }
 
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFFFF3E0)),
+        ModernCard(
+            shape = RoundedCornerShape(18.dp),
+            backgroundColor = SurfaceWhite,
+            borderColor = CardBorder,
+            elevation = 1.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(
-                    text = "🏃 Польза движения",
+                    text = "💡 Польза движения",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = AccentOrange
+                    color = TextDark
                 )
                 Text(
-                    text = "Даже 20-30 минут неспешной ходьбы в день нормализуют давление, улучшают сон и поддерживают тонус мышц. Калории от активности не прибавляются к норме питания.",
+                    text = "Даже 20-30 минут неспешной ходьбы в день нормализуют давление, улучшают сон и поддерживают тонус мышц. Калории от активности плюсуются к сожжённым за день.",
                     fontSize = 16.sp,
-                    color = Color.DarkGray
+                    color = TextMuted
                 )
             }
         }

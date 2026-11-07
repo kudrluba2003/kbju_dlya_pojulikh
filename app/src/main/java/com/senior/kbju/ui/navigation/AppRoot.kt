@@ -1,12 +1,14 @@
 package com.senior.kbju.ui.navigation
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -40,6 +42,10 @@ import com.senior.kbju.ui.screens.SettingsScreen
 import com.senior.kbju.ui.screens.WaterScreen
 import com.senior.kbju.ui.screens.WeightScreen
 import com.senior.kbju.ui.theme.AccentGreen
+import com.senior.kbju.ui.theme.AccentGreenLight
+import com.senior.kbju.ui.theme.CardBorder
+import com.senior.kbju.ui.theme.SurfaceWhite
+import com.senior.kbju.ui.theme.TextMuted
 import kotlinx.coroutines.flow.map
 
 object Routes {
@@ -104,50 +110,54 @@ fun AppRoot() {
                 contentWindowInsets = WindowInsets.safeDrawing,
                 bottomBar = {
                     if (currentRoute in bottomBarRoutes) {
-                        NavigationBar(
-                            containerColor = Color.White,
-                            tonalElevation = 8.dp
-                        ) {
-                            val items = listOf(
-                                NavigationTabItem(Routes.DASHBOARD, "Главная", "🏠"),
-                                NavigationTabItem(Routes.NUTRITION, "Еда", "🍽️"),
-                                NavigationTabItem(Routes.WATER, "Вода", "💧"),
-                                NavigationTabItem(Routes.ACTIVITY, "Спорт", "🏃"),
-                                NavigationTabItem(Routes.WEIGHT, "Вес", "⚖️"),
-                                NavigationTabItem(Routes.HISTORY, "История", "📅"),
-                                NavigationTabItem(Routes.SETTINGS, "Настройки", "⚙️")
-                            )
-                            items.forEach { item ->
-                                val selected = currentRoute == item.route
-                                NavigationBarItem(
-                                    selected = selected,
-                                    onClick = {
-                                        if (currentRoute != item.route) {
-                                            navController.navigate(item.route) {
-                                                popUpTo(Routes.DASHBOARD) {
-                                                    saveState = true
-                                                }
-                                                launchSingleTop = true
-                                                restoreState = true
-                                            }
-                                        }
-                                    },
-                                    icon = {
-                                        Text(text = item.icon, fontSize = 22.sp)
-                                    },
-                                    label = {
-                                        Text(
-                                            text = item.label,
-                                            fontSize = 12.sp,
-                                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-                                        )
-                                    },
-                                    colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = AccentGreen,
-                                        selectedTextColor = AccentGreen,
-                                        indicatorColor = Color(0xFFE8F5E9)
-                                    )
+                        Column {
+                            HorizontalDivider(thickness = 1.dp, color = CardBorder)
+                            NavigationBar(
+                                containerColor = SurfaceWhite,
+                                tonalElevation = 0.dp
+                            ) {
+                                val items = listOf(
+                                    NavigationTabItem(Routes.DASHBOARD, "Главная", "🏠"),
+                                    NavigationTabItem(Routes.NUTRITION, "Еда", "🍽️"),
+                                    NavigationTabItem(Routes.WATER, "Вода", "💧"),
+                                    NavigationTabItem(Routes.ACTIVITY, "Спорт", "🏃"),
+                                    NavigationTabItem(Routes.WEIGHT, "Вес", "⚖️"),
+                                    NavigationTabItem(Routes.HISTORY, "История", "📅"),
+                                    NavigationTabItem(Routes.SETTINGS, "Настройки", "⚙️")
                                 )
+                                items.forEach { item ->
+                                    val selected = currentRoute == item.route
+                                    NavigationBarItem(
+                                        selected = selected,
+                                        onClick = {
+                                            if (currentRoute != item.route) {
+                                                navController.navigate(item.route) {
+                                                    popUpTo(Routes.DASHBOARD) {
+                                                        saveState = true
+                                                    }
+                                                    launchSingleTop = true
+                                                    restoreState = true
+                                                }
+                                            }
+                                        },
+                                        icon = {
+                                            Text(text = item.icon, fontSize = 22.sp)
+                                        },
+                                        label = {
+                                            Text(
+                                                text = item.label,
+                                                fontSize = 12.sp,
+                                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+                                            )
+                                        },
+                                        colors = NavigationBarItemDefaults.colors(
+                                            selectedIconColor = AccentGreen,
+                                            selectedTextColor = AccentGreen,
+                                            unselectedTextColor = TextMuted,
+                                            indicatorColor = AccentGreenLight
+                                        )
+                                    )
+                                }
                             }
                         }
                     }

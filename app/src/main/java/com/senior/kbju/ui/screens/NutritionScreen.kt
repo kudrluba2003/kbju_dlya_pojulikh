@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
@@ -25,6 +23,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -34,10 +33,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.senior.kbju.data.local.entity.MealLogEntity
 import com.senior.kbju.data.model.MealType
 import com.senior.kbju.ui.components.BigButton
+import com.senior.kbju.ui.components.ModernCard
 import com.senior.kbju.ui.components.SectionTitle
 import com.senior.kbju.ui.theme.AccentGreen
+import com.senior.kbju.ui.theme.CardBorder
 import com.senior.kbju.ui.theme.ErrorRed
-import com.senior.kbju.ui.theme.SoftGray
+import com.senior.kbju.ui.theme.SurfaceWhite
+import com.senior.kbju.ui.theme.TextDark
+import com.senior.kbju.ui.theme.TextMuted
 import com.senior.kbju.utils.pretty
 import com.senior.kbju.viewmodel.DashboardViewModel
 import kotlin.math.roundToInt
@@ -52,7 +55,7 @@ fun NutritionScreen(
 
     if (state.isLoading || state.profile == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(modifier = Modifier.size(56.dp))
+            CircularProgressIndicator(modifier = Modifier.size(56.dp), color = AccentGreen)
         }
         return
     }
@@ -61,11 +64,11 @@ fun NutritionScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(20.dp),
+            .padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "Питание и КБЖУ",
+            text = "🍽️ Питание и КБЖУ",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             color = AccentGreen
@@ -78,16 +81,18 @@ fun NutritionScreen(
         )
 
         SectionTitle(text = "Баланс питательных веществ")
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftGray),
+        ModernCard(
+            shape = RoundedCornerShape(20.dp),
+            backgroundColor = SurfaceWhite,
+            borderColor = CardBorder,
+            elevation = 2.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 MacroNutritionRow(name = "Белки", eaten = state.protein, target = state.targetProtein)
                 MacroNutritionRow(name = "Жиры", eaten = state.fat, target = state.targetFat)
@@ -95,18 +100,19 @@ fun NutritionScreen(
             }
         }
 
-        SectionTitle(text = "Записи за сегодня")
+        SectionTitle(text = "Записи за день")
         if (state.meals.isEmpty()) {
-            Card(
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = SoftGray),
+            ModernCard(
+                shape = RoundedCornerShape(18.dp),
+                backgroundColor = SurfaceWhite,
+                borderColor = CardBorder,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Пока нет записей о еде за сегодня. Нажмите зелёную кнопку выше, чтобы добавить приём пищи.",
-                    fontSize = 18.sp,
-                    color = Color.DarkGray,
-                    modifier = Modifier.padding(16.dp)
+                    text = "Пока нет записей о еде за этот день. Нажмите зелёную кнопку выше, чтобы добавить приём пищи.",
+                    fontSize = 17.sp,
+                    color = TextMuted,
+                    modifier = Modifier.padding(18.dp)
                 )
             }
         } else {
@@ -116,9 +122,9 @@ fun NutritionScreen(
                     val groupKcal = list.sumOf { it.kcal }.roundToInt()
                     Text(
                         text = "${type.label} • $groupKcal ккал",
-                        fontSize = 22.sp,
+                        fontSize = 21.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.Black
+                        color = TextDark
                     )
                     list.forEach { meal ->
                         MealRecordCard(
@@ -139,40 +145,43 @@ fun NutritionScreen(
 
 @Composable
 private fun MealRecordCard(meal: MealLogEntity, onDelete: () -> Unit) {
-    Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = SoftGray)
+    ModernCard(
+        shape = RoundedCornerShape(16.dp),
+        backgroundColor = SurfaceWhite,
+        borderColor = CardBorder,
+        elevation = 1.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = meal.name,
-                    fontSize = 20.sp,
+                    fontSize = 19.sp,
                     fontWeight = FontWeight.Bold,
+                    color = TextDark,
                     maxLines = 2
                 )
                 Text(
                     text = "${meal.grams.pretty()} г • Б ${meal.protein.pretty()} • Ж ${meal.fat.pretty()} • У ${meal.carbs.pretty()}",
-                    fontSize = 17.sp,
-                    color = Color.DarkGray
+                    fontSize = 16.sp,
+                    color = TextMuted
                 )
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
                     text = "${meal.kcal.roundToInt()} ккал",
                     fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Black,
                     color = AccentGreen
                 )
                 TextButton(onClick = onDelete) {
                     Text(
                         text = "Удалить",
-                        fontSize = 17.sp,
+                        fontSize = 16.sp,
                         color = ErrorRed,
                         fontWeight = FontWeight.Bold
                     )
@@ -184,10 +193,10 @@ private fun MealRecordCard(meal: MealLogEntity, onDelete: () -> Unit) {
 
 @Composable
 private fun MacroNutritionRow(name: String, eaten: Double, target: Int) {
-    Column {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(text = name, fontSize = 19.sp, fontWeight = FontWeight.Bold)
-            Text(text = "${eaten.pretty()} из $target г", fontSize = 19.sp)
+            Text(text = name, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            Text(text = "${eaten.pretty()} из $target г", fontSize = 17.sp, color = TextMuted, fontWeight = FontWeight.Medium)
         }
         LinearProgressIndicator(
             progress = {
@@ -195,9 +204,10 @@ private fun MacroNutritionRow(name: String, eaten: Double, target: Int) {
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(12.dp),
+                .height(10.dp),
             color = AccentGreen,
-            trackColor = Color.White
+            trackColor = Color(0xFFE2E8F0),
+            strokeCap = StrokeCap.Round
         )
     }
 }

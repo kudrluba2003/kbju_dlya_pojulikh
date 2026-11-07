@@ -51,13 +51,22 @@ import com.senior.kbju.data.model.Goal
 import com.senior.kbju.ui.components.BigButton
 import com.senior.kbju.ui.components.BigToggleButton
 import com.senior.kbju.ui.components.ErrorText
+import com.senior.kbju.ui.components.ModernCard
 import com.senior.kbju.ui.components.NumberField
 import com.senior.kbju.ui.components.OutlineBigButton
 import com.senior.kbju.ui.components.SectionTitle
 import com.senior.kbju.ui.theme.AccentBlue
+import com.senior.kbju.ui.theme.AccentBlueBorder
+import com.senior.kbju.ui.theme.AccentBlueLight
 import com.senior.kbju.ui.theme.AccentGreen
+import com.senior.kbju.ui.theme.AccentGreenBorder
+import com.senior.kbju.ui.theme.AccentGreenLight
+import com.senior.kbju.ui.theme.CardBorder
 import com.senior.kbju.ui.theme.ErrorRed
 import com.senior.kbju.ui.theme.SoftGray
+import com.senior.kbju.ui.theme.SurfaceWhite
+import com.senior.kbju.ui.theme.TextDark
+import com.senior.kbju.ui.theme.TextMuted
 import com.senior.kbju.utils.pretty
 import com.senior.kbju.viewmodel.ProfileViewModel
 import kotlinx.coroutines.launch
@@ -209,9 +218,10 @@ fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewMode
                 diff > 0 -> "🎯 До цели осталось сбросить: ${diff.pretty()} кг"
                 else -> "🎯 До цели осталось набрать: ${(-diff).pretty()} кг"
             }
-            Card(
-                shape = RoundedCornerShape(10.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD)),
+            ModernCard(
+                shape = RoundedCornerShape(14.dp),
+                backgroundColor = AccentBlueLight,
+                borderColor = AccentBlueBorder,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
@@ -219,15 +229,17 @@ fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewMode
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = AccentBlue,
-                    modifier = Modifier.padding(12.dp)
+                    modifier = Modifier.padding(14.dp)
                 )
             }
         }
 
         SectionTitle(text = "Дата рождения и возраст")
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftGray),
+        ModernCard(
+            shape = RoundedCornerShape(18.dp),
+            backgroundColor = SurfaceWhite,
+            borderColor = CardBorder,
+            elevation = 1.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -302,9 +314,11 @@ fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewMode
         }
 
         SectionTitle(text = "Норма воды в день")
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftGray),
+        ModernCard(
+            shape = RoundedCornerShape(18.dp),
+            backgroundColor = SurfaceWhite,
+            borderColor = CardBorder,
+            elevation = 1.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -317,7 +331,7 @@ fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewMode
                 Text(
                     text = "Выберите стандартную норму или рассчитайте по весу (30 мл на 1 кг):",
                     fontSize = 16.sp,
-                    color = Color.DarkGray
+                    color = TextMuted
                 )
 
                 // Готовые пресеты
@@ -376,16 +390,19 @@ fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewMode
         // Живой предпросмотр: норма пересчитывается при каждом изменении полей.
         val preview = viewModel.calculateDailyTargets()
         if (preview != null) {
-            Card(
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9))
+            ModernCard(
+                shape = RoundedCornerShape(18.dp),
+                backgroundColor = AccentGreenLight,
+                borderColor = AccentGreenBorder,
+                elevation = 2.dp,
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Text(
-                        text = "Ваш базовый метаболизм: ${preview.bmr} ккал",
+                        text = "⚡ Ваш базовый метаболизм: ${preview.bmr} ккал",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
                         color = AccentBlue
@@ -393,11 +410,14 @@ fun ProfileScreen(onFinished: () -> Unit, viewModel: ProfileViewModel = viewMode
                     Text(
                         text = "Суточная норма: ${preview.kcal} ккал в день",
                         fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Black,
+                        color = AccentGreen
                     )
                     Text(
                         text = "Белки: ${preview.protein} г • Жиры: ${preview.fat} г • Углеводы: ${preview.carbs} г",
-                        fontSize = 20.sp
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = TextDark
                     )
                 }
             }

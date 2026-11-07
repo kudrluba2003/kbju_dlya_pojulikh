@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -34,13 +32,21 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.senior.kbju.ui.components.BigButton
 import com.senior.kbju.ui.components.ErrorText
+import com.senior.kbju.ui.components.ModernCard
 import com.senior.kbju.ui.components.NumberField
 import com.senior.kbju.ui.components.OutlineBigButton
 import com.senior.kbju.ui.components.SectionTitle
 import com.senior.kbju.ui.components.WeightChart
+import com.senior.kbju.ui.theme.AccentBlue
+import com.senior.kbju.ui.theme.AccentGreen
+import com.senior.kbju.ui.theme.AccentGreenBorder
+import com.senior.kbju.ui.theme.AccentGreenLight
 import com.senior.kbju.ui.theme.AccentOrange
+import com.senior.kbju.ui.theme.CardBorder
 import com.senior.kbju.ui.theme.ErrorRed
-import com.senior.kbju.ui.theme.SoftGray
+import com.senior.kbju.ui.theme.SurfaceWhite
+import com.senior.kbju.ui.theme.TextDark
+import com.senior.kbju.ui.theme.TextMuted
 import com.senior.kbju.utils.pretty
 import com.senior.kbju.viewmodel.WeightViewModel
 import java.time.LocalDate
@@ -80,23 +86,32 @@ fun WeightScreen(onFinished: () -> Unit, viewModel: WeightViewModel = viewModel(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(20.dp),
+            .padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Text(text = "Контроль веса", fontSize = 30.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text = "⚖️ Контроль веса",
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextDark
+        )
 
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftGray)
+        ModernCard(
+            shape = RoundedCornerShape(20.dp),
+            backgroundColor = SurfaceWhite,
+            borderColor = CardBorder,
+            elevation = 2.dp,
+            modifier = Modifier.fillMaxWidth()
         ) {
             Column(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.fillMaxWidth().padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
                     text = "Текущий вес: ${profile?.weightKg?.pretty() ?: "—"} кг",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Black,
+                    color = AccentGreen
                 )
 
                 val cur = profile?.weightKg
@@ -108,34 +123,42 @@ fun WeightScreen(onFinished: () -> Unit, viewModel: WeightViewModel = viewModel(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
-                        Text(text = "Исходный", fontSize = 16.sp, color = androidx.compose.ui.graphics.Color.Gray)
-                        Text(text = "${start?.pretty() ?: "—"} кг", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                        Text(text = "Исходный", fontSize = 15.sp, color = TextMuted)
+                        Text(text = "${start?.pretty() ?: "—"} кг", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = TextDark)
                     }
                     Column(horizontalAlignment = Alignment.End) {
-                        Text(text = "Желаемый (цель)", fontSize = 16.sp, color = androidx.compose.ui.graphics.Color.Gray)
-                        Text(text = "${target?.pretty() ?: "—"} кг", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                        Text(text = "Желаемый (цель)", fontSize = 15.sp, color = TextMuted)
+                        Text(text = "${target?.pretty() ?: "—"} кг", fontSize = 18.sp, fontWeight = FontWeight.SemiBold, color = TextDark)
                     }
                 }
 
                 if (cur != null && target != null) {
                     val diff = cur - target
                     val goalMsg = when {
-                        kotlin.math.abs(diff) < 0.2 -> "🎉 Поздравляем! Вы достигли цели!"
+                        kotlin.math.abs(diff) < 0.2 -> "🎉 Поздравляем! Вы достигли желаемого веса!"
                         diff > 0 -> "🎯 До цели осталось сбросить: ${(diff).pretty()} кг"
                         else -> "🎯 До цели осталось набрать: ${(-diff).pretty()} кг"
                     }
-                    Text(
-                        text = goalMsg,
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = AccentOrange
-                    )
+                    ModernCard(
+                        shape = RoundedCornerShape(12.dp),
+                        backgroundColor = AccentGreenLight,
+                        borderColor = AccentGreenBorder,
+                        elevation = 0.dp
+                    ) {
+                        Text(
+                            text = goalMsg,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = AccentGreen,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
                 }
 
                 Text(
                     text = "Суточная норма: ${currentTarget ?: "—"} ккал в день",
-                    fontSize = 18.sp,
-                    color = androidx.compose.ui.graphics.Color.DarkGray
+                    fontSize = 17.sp,
+                    color = TextMuted
                 )
             }
         }
@@ -152,41 +175,45 @@ fun WeightScreen(onFinished: () -> Unit, viewModel: WeightViewModel = viewModel(
         )
         Text(
             text = "Взвешивайтесь утром натощак — так числа будут точнее.",
-            fontSize = 18.sp
+            fontSize = 16.sp,
+            color = TextMuted
         )
         ErrorText(error)
-        BigButton(text = "СОХРАНИТЬ ВЕС", onClick = viewModel::save, color = AccentOrange)
+        BigButton(text = "СОХРАНИТЬ ВЕС", onClick = viewModel::save, color = AccentGreen)
 
         // История последних записей взвешиваний
         if (allWeights.isNotEmpty()) {
             SectionTitle(text = "История взвешиваний")
             allWeights.take(10).forEach { item ->
-                Card(
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = SoftGray)
+                ModernCard(
+                    shape = RoundedCornerShape(14.dp),
+                    backgroundColor = SurfaceWhite,
+                    borderColor = CardBorder,
+                    elevation = 1.dp
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 10.dp),
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
                             val dateStr = LocalDate.ofEpochDay(item.day)
                                 .format(DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("ru")))
-                            Text(text = "$dateStr г.", fontSize = 18.sp)
+                            Text(text = "$dateStr г.", fontSize = 16.sp, color = TextMuted)
                             Text(
                                 text = "${item.weightKg.pretty()} кг",
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.Bold
+                                fontSize = 21.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextDark
                             )
                         }
                         TextButton(onClick = { viewModel.deleteWeight(item.id) }) {
                             Text(
                                 text = "Удалить",
                                 color = ErrorRed,
-                                fontSize = 18.sp,
+                                fontSize = 16.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         }

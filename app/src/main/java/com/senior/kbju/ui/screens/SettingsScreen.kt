@@ -17,14 +17,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -43,12 +44,19 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.senior.kbju.BuildConfig
 import com.senior.kbju.ui.components.BigButton
+import com.senior.kbju.ui.components.ModernCard
 import com.senior.kbju.ui.components.OutlineBigButton
 import com.senior.kbju.ui.components.SectionTitle
 import com.senior.kbju.ui.theme.AccentBlue
 import com.senior.kbju.ui.theme.AccentGreen
+import com.senior.kbju.ui.theme.AccentGreenBorder
+import com.senior.kbju.ui.theme.AccentGreenLight
+import com.senior.kbju.ui.theme.CardBorder
 import com.senior.kbju.ui.theme.ErrorRed
-import com.senior.kbju.ui.theme.SoftGray
+import com.senior.kbju.ui.theme.ErrorRedLight
+import com.senior.kbju.ui.theme.SurfaceWhite
+import com.senior.kbju.ui.theme.TextDark
+import com.senior.kbju.ui.theme.TextMuted
 import com.senior.kbju.utils.AppUpdateChecker
 import com.senior.kbju.utils.AppUpdateInstaller
 import com.senior.kbju.viewmodel.SettingsViewModel
@@ -101,23 +109,26 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(20.dp),
+            .padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
             text = "⚙️ Настройки",
-            fontSize = 30.sp,
-            fontWeight = FontWeight.Bold
+            fontSize = 28.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextDark
         )
 
         // Баннер доступного обновления (если есть)
         availableUpdate?.let { update ->
-            Card(
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+            ModernCard(
+                shape = RoundedCornerShape(20.dp),
+                backgroundColor = AccentGreenLight,
+                borderColor = AccentGreenBorder,
+                elevation = 2.dp,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
                         text = "🎉 Доступно обновление v${update.tagName}!",
                         fontSize = 22.sp,
@@ -126,7 +137,8 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                     )
                     Text(
                         text = "Новая версия с улучшениями готова к установке прямо в приложении.",
-                        fontSize = 17.sp
+                        fontSize = 17.sp,
+                        color = TextDark
                     )
 
                     when (val dl = downloadState) {
@@ -149,7 +161,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                             )
                         }
                         is AppUpdateInstaller.DownloadState.Downloading -> {
-                            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 Text(
                                     text = if (dl.percent >= 0) "Загрузка обновления: ${dl.percent}%" else "Загрузка обновления...",
                                     fontSize = 18.sp,
@@ -159,13 +171,17 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                                 if (dl.percent >= 0) {
                                     LinearProgressIndicator(
                                         progress = { dl.percent / 100f },
-                                        modifier = Modifier.fillMaxWidth().height(8.dp),
-                                        color = AccentGreen
+                                        modifier = Modifier.fillMaxWidth().height(10.dp),
+                                        color = AccentGreen,
+                                        trackColor = Color.White,
+                                        strokeCap = StrokeCap.Round
                                     )
                                 } else {
                                     LinearProgressIndicator(
-                                        modifier = Modifier.fillMaxWidth().height(8.dp),
-                                        color = AccentGreen
+                                        modifier = Modifier.fillMaxWidth().height(10.dp),
+                                        color = AccentGreen,
+                                        trackColor = Color.White,
+                                        strokeCap = StrokeCap.Round
                                     )
                                 }
                             }
@@ -194,15 +210,17 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
 
         // Блок: Напоминания о приёмах пищи
         SectionTitle(text = "Напоминания о приёмах пищи")
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftGray),
+        ModernCard(
+            shape = RoundedCornerShape(20.dp),
+            backgroundColor = SurfaceWhite,
+            borderColor = CardBorder,
+            elevation = 1.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(18.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Row(
@@ -213,12 +231,13 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                         Text(
                             text = "Напоминать о еде",
                             fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = TextDark
                         )
                         Text(
                             text = "Уведомления о завтраке, обеде и ужине, чтобы не забыть сделать запись",
                             fontSize = 16.sp,
-                            color = Color.DarkGray
+                            color = TextMuted
                         )
                     }
                     Switch(
@@ -228,13 +247,17 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                                 permissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                             }
                             viewModel.setRemindersEnabled(checked)
-                        }
+                        },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = Color.White,
+                            checkedTrackColor = AccentGreen
+                        )
                     )
                 }
 
                 if (remindersEnabled) {
-                    HorizontalDivider(thickness = 1.dp, color = Color(0xFFDDDDDD))
-                    Text(text = "Время напоминаний:", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    HorizontalDivider(thickness = 1.dp, color = CardBorder)
+                    Text(text = "Время напоминаний:", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextDark)
 
                     // Завтрак
                     Row(
@@ -245,18 +268,21 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                         Text(
                             text = "Завтрак: $breakfastHour:00",
                             fontSize = 19.sp,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
+                            color = TextDark
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             BigButton(
                                 text = "➖ 1 ч",
                                 onClick = { viewModel.adjustBreakfastHour(-1) },
-                                color = Color.LightGray
+                                color = Color(0xFF64748B),
+                                modifier = Modifier.height(52.dp)
                             )
                             BigButton(
                                 text = "➕ 1 ч",
                                 onClick = { viewModel.adjustBreakfastHour(1) },
-                                color = AccentBlue
+                                color = AccentBlue,
+                                modifier = Modifier.height(52.dp)
                             )
                         }
                     }
@@ -270,18 +296,21 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                         Text(
                             text = "Обед: $lunchHour:00",
                             fontSize = 19.sp,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
+                            color = TextDark
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             BigButton(
                                 text = "➖ 1 ч",
                                 onClick = { viewModel.adjustLunchHour(-1) },
-                                color = Color.LightGray
+                                color = Color(0xFF64748B),
+                                modifier = Modifier.height(52.dp)
                             )
                             BigButton(
                                 text = "➕ 1 ч",
                                 onClick = { viewModel.adjustLunchHour(1) },
-                                color = AccentBlue
+                                color = AccentBlue,
+                                modifier = Modifier.height(52.dp)
                             )
                         }
                     }
@@ -295,18 +324,21 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                         Text(
                             text = "Ужин: $dinnerHour:00",
                             fontSize = 19.sp,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
+                            color = TextDark
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             BigButton(
                                 text = "➖ 1 ч",
                                 onClick = { viewModel.adjustDinnerHour(-1) },
-                                color = Color.LightGray
+                                color = Color(0xFF64748B),
+                                modifier = Modifier.height(52.dp)
                             )
                             BigButton(
                                 text = "➕ 1 ч",
                                 onClick = { viewModel.adjustDinnerHour(1) },
-                                color = AccentBlue
+                                color = AccentBlue,
+                                modifier = Modifier.height(52.dp)
                             )
                         }
                     }
@@ -316,12 +348,14 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
 
         // Блок: Обновления приложения
         SectionTitle(text = "Обновление приложения")
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftGray),
+        ModernCard(
+            shape = RoundedCornerShape(20.dp),
+            backgroundColor = SurfaceWhite,
+            borderColor = CardBorder,
+            elevation = 1.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -331,10 +365,10 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                         text = "Версия приложения: v${BuildConfig.VERSION_NAME}",
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color.DarkGray
+                        color = TextMuted
                     )
                     if (isCheckingUpdate) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.5.dp)
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.5.dp, color = AccentGreen)
                     }
                 }
 
@@ -354,33 +388,42 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
             }
         }
 
-        // Блок: Отзыв разработчику (прямая отправка без почтового клиента)
+        // Блок: Отзыв разработчику (прямая отправка)
         SectionTitle(text = "Отзыв и предложения")
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftGray),
+        ModernCard(
+            shape = RoundedCornerShape(20.dp),
+            backgroundColor = SurfaceWhite,
+            borderColor = CardBorder,
+            elevation = 1.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
                     text = "✉️ Написать разработчику",
                     fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark
                 )
                 Text(
                     text = "Напишите, каких продуктов или функций вам не хватает в приложении. Нажмите кнопку «Отправить отзыв», и сообщение сразу улетит разработчику Любови Кудрявцевой без перехода в почту:",
                     fontSize = 16.sp,
-                    color = Color.DarkGray
+                    color = TextMuted
                 )
                 OutlinedTextField(
                     value = feedbackInput,
                     onValueChange = { feedbackInput = it },
-                    placeholder = { Text("Напишите ваше пожелание...", fontSize = 17.sp) },
+                    placeholder = { Text("Напишите ваше пожелание...", fontSize = 17.sp, color = TextMuted) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(120.dp),
-                    textStyle = LocalTextStyle.current.copy(fontSize = 18.sp),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(14.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        focusedBorderColor = AccentGreen,
+                        unfocusedBorderColor = CardBorder
+                    ),
+                    textStyle = LocalTextStyle.current.copy(fontSize = 18.sp, color = TextDark)
                 )
 
                 feedbackSentMessage?.let { msg ->
@@ -388,7 +431,7 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                         text = msg,
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1B5E20)
+                        color = AccentGreen
                     )
                 }
 
@@ -409,21 +452,24 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
 
         // Блок: Резервная копия
         SectionTitle(text = "Резервная копия данных")
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftGray),
+        ModernCard(
+            shape = RoundedCornerShape(20.dp),
+            backgroundColor = SurfaceWhite,
+            borderColor = CardBorder,
+            elevation = 1.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(
                     text = "Сохранение и перенос истории",
                     fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark
                 )
                 Text(
                     text = "Сохраните всю историю питания, веса и продуктов в один файл. Его можно отправить детям в Telegram или восстановить при смене телефона.",
                     fontSize = 16.sp,
-                    color = Color.DarkGray
+                    color = TextMuted
                 )
 
                 if (isBackupBusy) {
@@ -432,9 +478,9 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        CircularProgressIndicator(modifier = Modifier.height(24.dp), strokeWidth = 3.dp)
+                        CircularProgressIndicator(modifier = Modifier.height(24.dp), strokeWidth = 3.dp, color = AccentBlue)
                         Spacer(modifier = Modifier.padding(horizontal = 8.dp))
-                        Text(text = "Обработка копии...", fontSize = 18.sp)
+                        Text(text = "Обработка копии...", fontSize = 18.sp, color = TextDark)
                     }
                 } else {
                     BigButton(
@@ -464,17 +510,18 @@ fun SettingsScreen(viewModel: SettingsViewModel = viewModel()) {
                 }
 
                 backupStatus?.let { status ->
-                    Card(
-                        shape = RoundedCornerShape(8.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E9)),
+                    ModernCard(
+                        shape = RoundedCornerShape(12.dp),
+                        backgroundColor = AccentGreenLight,
+                        borderColor = AccentGreenBorder,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
                             text = status,
                             fontSize = 17.sp,
                             fontWeight = FontWeight.Medium,
-                            color = Color(0xFF1B5E20),
-                            modifier = Modifier.padding(10.dp)
+                            color = AccentGreen,
+                            modifier = Modifier.padding(12.dp)
                         )
                     }
                 }

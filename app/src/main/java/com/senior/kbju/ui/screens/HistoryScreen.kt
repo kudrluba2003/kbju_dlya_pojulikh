@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,8 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,11 +29,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.senior.kbju.ui.components.BigButton
+import com.senior.kbju.ui.components.ModernCard
 import com.senior.kbju.ui.components.OutlineBigButton
 import com.senior.kbju.ui.theme.AccentBlue
 import com.senior.kbju.ui.theme.AccentGreen
 import com.senior.kbju.ui.theme.AccentOrange
-import com.senior.kbju.ui.theme.SoftGray
+import com.senior.kbju.ui.theme.CardBorder
+import com.senior.kbju.ui.theme.SurfaceWhite
+import com.senior.kbju.ui.theme.TextDark
+import com.senior.kbju.ui.theme.TextMuted
 import com.senior.kbju.viewmodel.HistoryDayUiModel
 import com.senior.kbju.viewmodel.HistoryViewModel
 import java.time.LocalDate
@@ -46,31 +49,33 @@ fun HistoryScreen(onBack: () -> Unit, viewModel: HistoryViewModel = viewModel())
     val state by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
+    Column(modifier = Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
         Text(
-            text = "История за неделю",
-            fontSize = 30.sp,
+            text = "📅 История за неделю",
+            fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(top = 20.dp)
+            color = TextDark,
+            modifier = Modifier.padding(top = 18.dp)
         )
         Text(
-            text = "Норму сравниваем с сегодняшней: ${state.targetKcal} ккал в день",
-            fontSize = 18.sp,
-            modifier = Modifier.padding(top = 4.dp, bottom = 4.dp)
+            text = "Ваша суточная норма: ${state.targetKcal} ккал",
+            fontSize = 17.sp,
+            color = TextMuted,
+            modifier = Modifier.padding(top = 2.dp, bottom = 6.dp)
         )
         if (state.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(modifier = Modifier.size(56.dp))
+                CircularProgressIndicator(modifier = Modifier.size(56.dp), color = AccentGreen)
             }
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
-                contentPadding = PaddingValues(top = 10.dp, bottom = 20.dp)
+                contentPadding = PaddingValues(top = 10.dp, bottom = 24.dp)
             ) {
                 item {
                     BigButton(
-                        text = "ОТПРАВИТЬ ОТЧЁТ РОДНЫМ ИЛИ ВРАЧУ",
+                        text = "📤 ОТПРАВИТЬ ОТЧЁТ РОДНЫМ ИЛИ ВРАЧУ",
                         onClick = {
                             val text = viewModel.generateWeeklyReport()
                             val sendIntent = Intent(Intent.ACTION_SEND).apply {
@@ -98,40 +103,52 @@ fun HistoryScreen(onBack: () -> Unit, viewModel: HistoryViewModel = viewModel())
 @Composable
 private fun HistoryDayCard(day: HistoryDayUiModel) {
     val balance = day.balance
-    Card(
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = SoftGray),
+    ModernCard(
+        shape = RoundedCornerShape(18.dp),
+        backgroundColor = SurfaceWhite,
+        borderColor = CardBorder,
+        elevation = 1.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(
                 text = dayTitle(day.day),
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Black
+                color = TextDark
             )
-            Text(text = "Съедено: ${day.eatenKcal} ккал", fontSize = 20.sp, color = Color.Black)
-            Text(
-                text = "Потрачено активностью: ${day.burnedKcal} ккал",
-                fontSize = 20.sp,
-                color = Color.Black
-            )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(text = "🍽️ Съедено:", fontSize = 18.sp, color = TextMuted)
+                Text(text = "${day.eatenKcal} ккал", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            }
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(text = "🏃 Активность:", fontSize = 18.sp, color = TextMuted)
+                Text(text = "${day.burnedKcal} ккал", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = AccentOrange)
+            }
             if (day.waterMl > 0) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(text = "💧 Выпито воды:", fontSize = 18.sp, color = TextMuted)
+                    Text(text = "${day.waterMl} мл (${day.waterMl / 250} ст.)", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = AccentBlue)
+                }
+            }
+            Spacer(modifier = Modifier.height(2.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(
-                    text = "Выпито воды: ${day.waterMl} мл (${day.waterMl / 250} стак.)",
+                    text = if (balance >= 0) "Дефицит за день:" else "Перебор нормы:",
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark
+                )
+                Text(
+                    text = if (balance >= 0) "$balance ккал" else "${-balance} ккал",
                     fontSize = 20.sp,
-                    color = AccentBlue
+                    fontWeight = FontWeight.Black,
+                    color = if (balance >= 0) AccentGreen else AccentOrange
                 )
             }
-            Text(
-                text = if (balance >= 0) "Итог: дефицит $balance ккал" else "Итог: перебор ${-balance} ккал",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
-                color = if (balance >= 0) AccentGreen else AccentOrange
-            )
         }
     }
 }

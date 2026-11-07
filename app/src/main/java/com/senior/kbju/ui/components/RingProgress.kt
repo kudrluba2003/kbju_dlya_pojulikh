@@ -16,12 +16,12 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
-// Кольцевой прогресс-бар на Canvas — без внешних библиотек.
+// Современный кольцевой прогресс-бар на Canvas
 @Composable
 fun RingProgress(
     progress: Float,
     modifier: Modifier = Modifier,
-    trackColor: Color = Color(0xFFE0E0E0),
+    trackColor: Color = Color(0xFFE2E8F0),
     progressColor: Color = MaterialTheme.colorScheme.primary,
     content: @Composable BoxScope.() -> Unit = {}
 ) {
@@ -33,9 +33,10 @@ fun RingProgress(
         contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.matchParentSize()) {
-            val stroke = 26.dp.toPx()
+            val stroke = 24.dp.toPx()
             val arcSize = Size(size.width - stroke, size.height - stroke)
             val topLeft = Offset(stroke / 2, stroke / 2)
+            // Фоновый круг
             drawArc(
                 color = trackColor,
                 startAngle = 0f,
@@ -45,6 +46,7 @@ fun RingProgress(
                 size = arcSize,
                 style = Stroke(width = stroke, cap = StrokeCap.Round)
             )
+            // Прогресс
             val clamped = progress.coerceIn(0f, 1f)
             if (clamped > 0f) {
                 drawArc(

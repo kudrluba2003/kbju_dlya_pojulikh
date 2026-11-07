@@ -1,5 +1,6 @@
 package com.senior.kbju.ui.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,8 +15,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -29,15 +28,27 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.senior.kbju.ui.components.BigButton
+import com.senior.kbju.ui.components.ModernCard
 import com.senior.kbju.ui.components.RingProgress
 import com.senior.kbju.ui.theme.AccentBlue
+import com.senior.kbju.ui.theme.AccentBlueBorder
+import com.senior.kbju.ui.theme.AccentBlueLight
 import com.senior.kbju.ui.theme.AccentGreen
+import com.senior.kbju.ui.theme.AccentGreenBorder
+import com.senior.kbju.ui.theme.AccentGreenLight
 import com.senior.kbju.ui.theme.AccentOrange
+import com.senior.kbju.ui.theme.AccentOrangeBorder
+import com.senior.kbju.ui.theme.AccentOrangeLight
+import com.senior.kbju.ui.theme.CardBorder
 import com.senior.kbju.ui.theme.SoftGray
+import com.senior.kbju.ui.theme.SurfaceWhite
+import com.senior.kbju.ui.theme.TextDark
+import com.senior.kbju.ui.theme.TextMuted
 import com.senior.kbju.viewmodel.DashboardViewModel
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -52,7 +63,7 @@ fun DashboardScreen(
 
     if (state.isLoading || state.profile == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(modifier = Modifier.size(56.dp))
+            CircularProgressIndicator(modifier = Modifier.size(56.dp), color = AccentGreen)
         }
         return
     }
@@ -83,30 +94,30 @@ fun DashboardScreen(
     } else 0f
     val remaining = state.remainingKcal
 
-    // Кольцо зажигается оранжевым только при превышении нормы более чем на 100 ккал (погрешность +-100 ккал остается в зеленой зоне)
     val isExceeded = state.eatenKcal > state.targetKcal + 100
     val ringColor = if (isExceeded) AccentOrange else AccentGreen
 
-    // Дефицит за день: съедено минус всего сожжено (базовый метаболизм + активность)
     val netCalories = state.netCalories
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(20.dp),
+            .padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Переключатель дней с календариком
-        Card(
-            shape = RoundedCornerShape(14.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftGray),
+        // Переключатель дней с календарём
+        ModernCard(
+            shape = RoundedCornerShape(20.dp),
+            backgroundColor = SurfaceWhite,
+            borderColor = CardBorder,
+            elevation = 2.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp, horizontal = 8.dp),
+                    .padding(vertical = 10.dp, horizontal = 12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Row(
@@ -116,9 +127,11 @@ fun DashboardScreen(
                 ) {
                     IconButton(
                         onClick = { viewModel.shiftDay(-1) },
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier
+                            .size(46.dp)
+                            .background(SoftGray, RoundedCornerShape(14.dp))
                     ) {
-                        Text("◀", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = AccentBlue)
+                        Text("◀", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = AccentBlue)
                     }
 
                     Row(
@@ -126,28 +139,38 @@ fun DashboardScreen(
                             .clickable { showDatePicker() }
                             .padding(horizontal = 8.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Text("📅", fontSize = 28.sp)
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Box(
+                            modifier = Modifier
+                                .size(42.dp)
+                                .background(AccentBlueLight, RoundedCornerShape(12.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("📅", fontSize = 22.sp)
+                        }
+                        Column {
                             Text(
                                 text = if (state.isToday) "Сегодня" else dateText,
                                 fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                color = TextDark
                             )
                             Text(
                                 text = if (state.isToday) dateText else "нажмите для выбора даты",
                                 fontSize = 14.sp,
-                                color = Color.DarkGray
+                                color = TextMuted
                             )
                         }
                     }
 
                     IconButton(
                         onClick = { viewModel.shiftDay(1) },
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier
+                            .size(46.dp)
+                            .background(SoftGray, RoundedCornerShape(14.dp))
                     ) {
-                        Text("▶", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = AccentBlue)
+                        Text("▶", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = AccentBlue)
                     }
                 }
 
@@ -163,121 +186,170 @@ fun DashboardScreen(
         }
 
         // Кольцо калорий
-        RingProgress(
-            progress = progress,
-            progressColor = ringColor,
-            modifier = Modifier
-                .size(260.dp)
-                .align(Alignment.CenterHorizontally)
+        ModernCard(
+            shape = RoundedCornerShape(24.dp),
+            backgroundColor = SurfaceWhite,
+            borderColor = CardBorder,
+            elevation = 2.dp,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "Съедено", fontSize = 20.sp)
-                Text(
-                    text = "${state.eatenKcal}",
-                    fontSize = 44.sp,
-                    fontWeight = FontWeight.Black,
-                    color = AccentGreen
-                )
-                Text(text = "из ${state.targetKcal} ккал", fontSize = 20.sp)
-                if (isExceeded) {
-                    Text(
-                        text = "Превышение нормы",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = AccentOrange
-                    )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                RingProgress(
+                    progress = progress,
+                    progressColor = ringColor,
+                    modifier = Modifier.size(250.dp)
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(text = "Съедено", fontSize = 18.sp, color = TextMuted)
+                        Text(
+                            text = "${state.eatenKcal}",
+                            fontSize = 44.sp,
+                            fontWeight = FontWeight.Black,
+                            color = ringColor
+                        )
+                        Text(
+                            text = "из ${state.targetKcal} ккал",
+                            fontSize = 19.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = TextMuted
+                        )
+                        if (isExceeded) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "⚠️ Превышение",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = AccentOrange
+                            )
+                        }
+                    }
                 }
             }
         }
 
-        // Плашки: Сожжено (оранжевая) и Осталось съесть (зеленая)
+        // Плашки: Сожжено (персиковая) и Осталось съесть (мятная)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatCard(
+            ModernStatCard(
                 title = "Сожжено",
                 value = "${state.burnedKcal} ккал",
-                subtitle = if (state.activityBurnedKcal > 0) "базовый ${state.basalMetabolismKcal} + активность ${state.activityBurnedKcal}" else "базовый метаболизм",
-                modifier = Modifier.weight(1f),
-                valueColor = AccentOrange
+                icon = "🔥",
+                subtitle = if (state.activityBurnedKcal > 0) "базовый ${state.basalMetabolismKcal} + спорт ${state.activityBurnedKcal}" else "базовый метаболизм",
+                backgroundColor = AccentOrangeLight,
+                borderColor = AccentOrangeBorder,
+                valueColor = AccentOrange,
+                modifier = Modifier.weight(1f)
             )
-            StatCard(
-                title = if (remaining >= 0) "Осталось съесть" else "Сверху нормы",
+            ModernStatCard(
+                title = if (remaining >= 0) "Осталось" else "Сверху нормы",
                 value = if (remaining >= 0) "$remaining ккал" else "${-remaining} ккал",
-                modifier = Modifier.weight(1f),
-                valueColor = if (isExceeded) AccentOrange else AccentGreen
+                icon = "🥗",
+                backgroundColor = if (isExceeded) AccentOrangeLight else AccentGreenLight,
+                borderColor = if (isExceeded) AccentOrangeBorder else AccentGreenBorder,
+                valueColor = if (isExceeded) AccentOrange else AccentGreen,
+                modifier = Modifier.weight(1f)
             )
         }
 
-        // Карточка: Ваш базовый метаболизм (авто-пересчет по весу)
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftGray),
+        // Карточка: Ваш базовый метаболизм (нежно-голубая)
+        ModernCard(
+            shape = RoundedCornerShape(18.dp),
+            backgroundColor = AccentBlueLight,
+            borderColor = AccentBlueBorder,
+            elevation = 1.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(18.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Ваш базовый метаболизм",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Энергия на дыхание и работу организма при вашем весе ${state.currentWeightKg} кг",
-                        fontSize = 15.sp,
-                        color = Color.DarkGray
-                    )
+                Row(
+                    modifier = Modifier.weight(1f),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text("⚡", fontSize = 28.sp)
+                    Column {
+                        Text(
+                            text = "Базовый метаболизм",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextDark
+                        )
+                        Text(
+                            text = "Расход энергии в покое при весе ${state.currentWeightKg} кг",
+                            fontSize = 15.sp,
+                            color = TextMuted
+                        )
+                    }
                 }
                 Text(
                     text = "${state.basalMetabolismKcal} ккал",
                     fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Black,
                     color = AccentBlue
                 )
             }
         }
 
-        // Плашка: Дефицит за день (без надписи съедено-сожжено)
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftGray),
+        // Плашка: Дефицит за день
+        val deficitBg = if (netCalories <= 0) AccentGreenLight else AccentOrangeLight
+        val deficitBorder = if (netCalories <= 0) AccentGreenBorder else AccentOrangeBorder
+        val deficitColor = if (netCalories <= 0) AccentGreen else AccentOrange
+        val deficitIcon = if (netCalories <= 0) "📉" else "📈"
+        val deficitTitle = if (netCalories <= 0) "Дефицит за день" else "Профицит за день"
+        val deficitSign = if (netCalories < 0) "-${kotlin.math.abs(netCalories)}" else "$netCalories"
+
+        ModernCard(
+            shape = RoundedCornerShape(18.dp),
+            backgroundColor = deficitBg,
+            borderColor = deficitBorder,
+            elevation = 1.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(18.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(deficitIcon, fontSize = 28.sp)
                     Text(
-                        text = "Дефицит за день",
+                        text = deficitTitle,
                         fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = TextDark
                     )
                 }
                 Text(
-                    text = "$netCalories ккал",
+                    text = "$deficitSign ккал",
                     fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (netCalories <= 0) AccentGreen else AccentOrange
+                    fontWeight = FontWeight.Black,
+                    color = deficitColor
                 )
             }
         }
 
-        // Крупная кнопка "Мой профиль"
+        // Крупная кнопка "Мой профиль" в глубоком графитовом цвете
         BigButton(
             text = "👤 МОЙ ПРОФИЛЬ",
             onClick = onEditProfile,
-            color = Color(0xFF37474F),
+            color = Color(0xFF1E293B),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
+                .height(66.dp)
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -285,38 +357,57 @@ fun DashboardScreen(
 }
 
 @Composable
-private fun StatCard(
+private fun ModernStatCard(
     title: String,
     value: String,
+    icon: String,
     subtitle: String? = null,
-    modifier: Modifier = Modifier,
-    valueColor: Color = Color.Black
+    backgroundColor: Color = SurfaceWhite,
+    borderColor: Color = CardBorder,
+    valueColor: Color = TextDark,
+    modifier: Modifier = Modifier
 ) {
-    Card(
+    ModernCard(
         modifier = modifier,
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = SoftGray)
+        backgroundColor = backgroundColor,
+        borderColor = borderColor,
+        shape = RoundedCornerShape(20.dp),
+        elevation = 2.dp
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(text = title, fontSize = 18.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(text = icon, fontSize = 20.sp)
+                Text(
+                    text = title,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = TextMuted,
+                    textAlign = TextAlign.Center
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = value,
                 fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
+                fontWeight = FontWeight.Black,
                 color = valueColor,
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = TextAlign.Center
             )
             if (subtitle != null) {
+                Spacer(modifier = Modifier.height(3.dp))
                 Text(
                     text = subtitle,
                     fontSize = 13.sp,
-                    color = Color.DarkGray,
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                    color = TextMuted,
+                    textAlign = TextAlign.Center
                 )
             }
         }

@@ -13,34 +13,31 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.senior.kbju.ui.components.BigButton
-import com.senior.kbju.ui.components.OutlineBigButton
-import com.senior.kbju.ui.components.SectionTitle
+import com.senior.kbju.ui.components.ModernCard
 import com.senior.kbju.ui.theme.AccentBlue
-import com.senior.kbju.ui.theme.SoftGray
-import com.senior.kbju.utils.pretty
+import com.senior.kbju.ui.theme.AccentBlueBorder
+import com.senior.kbju.ui.theme.AccentBlueLight
+import com.senior.kbju.ui.theme.CardBorder
+import com.senior.kbju.ui.theme.SurfaceWhite
+import com.senior.kbju.ui.theme.TextDark
+import com.senior.kbju.ui.theme.TextMuted
 import com.senior.kbju.viewmodel.DashboardViewModel
-import kotlin.math.roundToInt
 
 @Composable
 fun WaterScreen(
@@ -48,11 +45,10 @@ fun WaterScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val haptic = LocalHapticFeedback.current
-    var waterExplanation by remember { mutableStateOf<String?>(null) }
 
     if (state.isLoading || state.profile == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(modifier = Modifier.size(56.dp))
+            CircularProgressIndicator(modifier = Modifier.size(56.dp), color = AccentBlue)
         }
         return
     }
@@ -61,19 +57,21 @@ fun WaterScreen(
         modifier = Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
-            .padding(20.dp),
+            .padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
-            text = "Водный баланс",
+            text = "💧 Водный баланс",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
             color = AccentBlue
         )
 
-        Card(
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftGray),
+        ModernCard(
+            shape = RoundedCornerShape(22.dp),
+            backgroundColor = AccentBlueLight,
+            borderColor = AccentBlueBorder,
+            elevation = 2.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
@@ -84,15 +82,16 @@ fun WaterScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "💧 ${state.waterGlasses} из ${state.targetWaterGlasses} стаканов",
-                    fontSize = 26.sp,
-                    fontWeight = FontWeight.Bold,
+                    text = "${state.waterGlasses} из ${state.targetWaterGlasses} стаканов",
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.Black,
                     color = AccentBlue
                 )
                 Text(
                     text = "${state.waterMl} мл из ${state.targetWaterMl} мл",
                     fontSize = 20.sp,
-                    color = Color.DarkGray
+                    fontWeight = FontWeight.Medium,
+                    color = TextDark
                 )
 
                 // Сетка стаканов
@@ -114,7 +113,7 @@ fun WaterScreen(
                     Text(
                         text = glassesIcons,
                         fontSize = 28.sp,
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        textAlign = TextAlign.Center
                     )
                 }
 
@@ -138,50 +137,54 @@ fun WaterScreen(
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 viewModel.removeWater()
                             },
-                            color = Color.LightGray,
-                            modifier = Modifier.weight(0.4f)
+                            color = Color(0xFF94A3B8),
+                            modifier = Modifier.weight(0.35f)
                         )
                     }
                 }
             }
         }
 
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = SoftGray),
+        ModernCard(
+            shape = RoundedCornerShape(18.dp),
+            backgroundColor = SurfaceWhite,
+            borderColor = CardBorder,
+            elevation = 1.dp,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = "💧 Ваша текущая норма: ${state.targetWaterGlasses} ст. (${state.targetWaterMl} мл)",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = AccentBlue
-                )
-                Text(
-                    text = "Изменить норму или рассчитать её по весу можно на главной вкладке в «Изменить профиль и настройки».",
-                    fontSize = 15.sp,
-                    color = Color.DarkGray
-                )
-            }
-        }
-
-        Card(
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(
-                    text = "💡 Совет для здоровья",
+                    text = "💧 Ваша норма: ${state.targetWaterGlasses} ст. (${state.targetWaterMl} мл)",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = AccentBlue
                 )
                 Text(
-                    text = "С возрастом чувство жажды притупляется. Старайтесь выпивать по половине или целому стакану воды между приёмами пищи, не дожидаясь жажды.",
+                    text = "Изменить норму воды или рассчитать её по весу (30 мл на 1 кг) можно в разделе «Мой профиль».",
+                    fontSize = 15.sp,
+                    color = TextMuted
+                )
+            }
+        }
+
+        ModernCard(
+            shape = RoundedCornerShape(18.dp),
+            backgroundColor = SurfaceWhite,
+            borderColor = CardBorder,
+            elevation = 1.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "💡 Совет для здоровья",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark
+                )
+                Text(
+                    text = "Пейте воду небольшими глотками в течение дня: один стакан после пробуждения, за 30 минут до еды и между приёмами пищи. Это поддерживает давление, суставы и пищеварение в тонусе.",
                     fontSize = 16.sp,
-                    color = Color.DarkGray
+                    color = TextMuted
                 )
             }
         }
