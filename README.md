@@ -65,13 +65,13 @@ Android-приложение подсчёта КБЖУ, активности, в
 
 ## 📱 Скриншоты
 
-| Главный экран | Дневник питания (аккордеон) | Добавление еды / сканер |
+| Главный экран | Дневник питания (аккордеон) | Добавление еды / поиск |
 |:---:|:---:|:---:|
-| <img src="screenshots/01-dashboard.png" width="240" alt="Главный экран" /> | <img src="screenshots/02-nutrition.png" width="240" alt="Дневник питания" /> | <img src="screenshots/03-add-food.png" width="240" alt="Добавление еды" /> |
+| <img src="screenshots/01-dashboard.jpg" width="240" alt="Главный экран" /> | <img src="screenshots/02-nutrition.jpg" width="240" alt="Дневник питания" /> | <img src="screenshots/03-add-food.jpg" width="240" alt="Добавление еды" /> |
 
-| Конструктор блюд | Отчёт за неделю / месяц | Настройки и напоминания |
+| Конструктор сложных блюд | Отчёт за неделю и месяц | Настройки и напоминания |
 |:---:|:---:|:---:|
-| <img src="screenshots/04-recipe.png" width="240" alt="Конструктор блюд" /> | <img src="screenshots/05-reports.png" width="240" alt="Отчёт за неделю и месяц" /> | <img src="screenshots/06-settings.png" width="240" alt="Настройки" /> |
+| <img src="screenshots/04-recipe.jpg" width="240" alt="Конструктор сложных блюд" /> | <img src="screenshots/05-reports.jpg" width="240" alt="Отчёт за неделю и месяц" /> | <img src="screenshots/06-settings.jpg" width="240" alt="Настройки и напоминания" /> |
 
 ---
 
