@@ -36,6 +36,9 @@ object AppUpdateInstaller {
                 var conn: HttpURLConnection? = null
 
                 while (redirects < 5) {
+                    if (!currentUrl.startsWith("https://", ignoreCase = true)) {
+                        throw SecurityException("Небезопасный протокол: разрешён только HTTPS")
+                    }
                     val u = URL(currentUrl)
                     conn = (u.openConnection() as HttpURLConnection).apply {
                         connectTimeout = 15000

@@ -224,7 +224,7 @@ fun PlainTextField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    placeholder: String? = null
+    placeholder: String? = "Начните вводить название"
 ) {
     Column(modifier = modifier) {
         Text(

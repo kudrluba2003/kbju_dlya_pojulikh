@@ -98,6 +98,7 @@ object FeedbackSender {
     }
 
     private fun postJson(endpoint: String, json: JSONObject): Boolean {
+        if (!endpoint.startsWith("https://", ignoreCase = true)) return false
         val url = URL(endpoint)
         val conn = (url.openConnection() as HttpURLConnection).apply {
             requestMethod = "POST"

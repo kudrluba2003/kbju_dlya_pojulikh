@@ -315,7 +315,8 @@ private fun CatalogContent(viewModel: AddFoodViewModel) {
         PlainTextField(
             label = "Название продукта",
             value = query,
-            onValueChange = viewModel::onSearchQueryChange
+            onValueChange = viewModel::onSearchQueryChange,
+            placeholder = "Начните вводить название"
         )
 
         OutlineBigButton(
@@ -392,7 +393,8 @@ private fun CatalogContent(viewModel: AddFoodViewModel) {
         PlainTextField(
             label = "Поиск среди моих рецептов",
             value = query,
-            onValueChange = viewModel::onSearchQueryChange
+            onValueChange = viewModel::onSearchQueryChange,
+            placeholder = "Начните вводить название"
         )
 
         if (userRecipes.isEmpty()) {
@@ -723,7 +725,8 @@ private fun LabelContent(viewModel: AddFoodViewModel) {
     PlainTextField(
         label = "Название продукта",
         value = name,
-        onValueChange = { viewModel.labelName.value = it }
+        onValueChange = { viewModel.labelName.value = it },
+        placeholder = "Начните вводить название"
     )
     Text(text = "Все числа — как написано на 100 грамм продукта:", fontSize = 18.sp)
     NumberField(
@@ -979,7 +982,8 @@ private fun RecipePortionContent(viewModel: AddFoodViewModel) {
     PlainTextField(
         label = "Название блюда",
         value = dishName,
-        onValueChange = { viewModel.dishName.value = it }
+        onValueChange = { viewModel.dishName.value = it },
+        placeholder = "Начните вводить название"
     )
     Card(
         shape = RoundedCornerShape(12.dp),

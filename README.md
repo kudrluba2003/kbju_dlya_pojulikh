@@ -17,7 +17,7 @@ Android-приложение подсчёта КБЖУ, активности, в
 
 Готовый установочный файл APK доступен в разделе релизов:
 
-👉 **[Скачать актуальный `app-release.apk` (v1.9)](https://github.com/kudrluba2003/kbju_dlya_pojulikh/releases/latest/download/app-release.apk)**
+👉 **[Скачать актуальный `app-release.apk` (v2.0)](https://github.com/kudrluba2003/kbju_dlya_pojulikh/releases/latest/download/app-release.apk)**
 
 ---
 
