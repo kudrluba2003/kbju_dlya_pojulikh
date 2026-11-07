@@ -20,12 +20,16 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -232,6 +236,53 @@ fun DashboardScreen(
                         fontWeight = FontWeight.Medium
                     )
                 }
+            }
+        }
+
+        // Оставить отзыв / предложить функцию
+        var feedbackInput by remember { mutableStateOf("") }
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = SoftGray),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "✉️ Оставить отзыв разработчику",
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Напишите, каких продуктов или функций вам не хватает в приложении:",
+                    fontSize = 15.sp,
+                    color = Color.DarkGray
+                )
+                OutlinedTextField(
+                    value = feedbackInput,
+                    onValueChange = { feedbackInput = it },
+                    placeholder = { Text("Напишите ваше пожелание...", fontSize = 16.sp) },
+                    modifier = Modifier.fillMaxWidth().height(100.dp),
+                    textStyle = LocalTextStyle.current.copy(fontSize = 17.sp),
+                    shape = RoundedCornerShape(8.dp)
+                )
+                BigButton(
+                    text = "📨 ОТПРАВИТЬ ОТЗЫВ",
+                    onClick = {
+                        val body = feedbackInput.trim()
+                        val sendIntent = Intent(Intent.ACTION_SENDTO).apply {
+                            data = Uri.parse("mailto:kudrluba2003@gmail.com")
+                            putExtra(Intent.EXTRA_SUBJECT, "НОВОВВЕДЕНИЕ ПО ПРОСЬБЕ ПОЛЬЗОВАТЕЛЯ")
+                            putExtra(
+                                Intent.EXTRA_TEXT,
+                                "${if (body.isNotBlank()) body else "(Пользователь не указал текст)"}\n\n---\nПриложение: Дневник питания v${BuildConfig.VERSION_NAME} (сборка ${BuildConfig.VERSION_CODE})\nAndroid: ${android.os.Build.VERSION.RELEASE}"
+                            )
+                        }
+                        try {
+                            context.startActivity(Intent.createChooser(sendIntent, "Отправить отзыв"))
+                        } catch (_: Exception) {}
+                    },
+                    color = AccentGreen
+                )
             }
         }
 
