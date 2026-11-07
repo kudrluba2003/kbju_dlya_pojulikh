@@ -223,7 +223,8 @@ fun PlainTextField(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    placeholder: String? = null
 ) {
     Column(modifier = modifier) {
         Text(
@@ -236,6 +237,9 @@ fun PlainTextField(
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
+            placeholder = if (placeholder != null) {
+                { Text(text = placeholder, fontSize = 18.sp, color = TextMuted) }
+            } else null,
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             shape = RoundedCornerShape(14.dp),
