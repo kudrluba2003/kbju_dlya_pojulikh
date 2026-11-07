@@ -1,5 +1,6 @@
 package com.senior.kbju.ui.screens
 
+import android.app.DatePickerDialog
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -22,6 +23,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,6 +35,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+import com.senior.kbju.ui.theme.AccentBlue
+import com.senior.kbju.ui.theme.AccentBlueLight
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -77,6 +84,24 @@ fun NutritionScreen(
         return
     }
 
+    val localDate = remember(state.dateEpochDay) { LocalDate.ofEpochDay(state.dateEpochDay) }
+    val dateText = remember(localDate) {
+        localDate.format(DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("ru")))
+    }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    fun showDatePicker() {
+        DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                val picked = LocalDate.of(year, month + 1, dayOfMonth)
+                viewModel.selectDate(picked.toEpochDay())
+            },
+            localDate.year,
+            localDate.monthValue - 1,
+            localDate.dayOfMonth
+        ).show()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -90,6 +115,95 @@ fun NutritionScreen(
             fontWeight = FontWeight.Bold,
             color = AccentGreen
         )
+
+        // Переключатель дней для просмотра рациона
+        ModernCard(
+            shape = RoundedCornerShape(18.dp),
+            backgroundColor = SurfaceWhite,
+            borderColor = CardBorder,
+            elevation = 1.dp,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp, horizontal = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = { viewModel.shiftDay(-1) },
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(SoftGray, RoundedCornerShape(12.dp))
+                    ) {
+                        Text("◀", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = AccentBlue)
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .clickable { showDatePicker() }
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(38.dp)
+                                .background(AccentBlueLight, RoundedCornerShape(10.dp)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("📅", fontSize = 20.sp)
+                        }
+                        Column {
+                            val today = remember { LocalDate.now() }
+                            val label = when (localDate) {
+                                today -> "Сегодня"
+                                today.minusDays(1) -> "Вчера"
+                                today.plusDays(1) -> "Завтра"
+                                else -> dateText
+                            }
+                            Text(
+                                text = "День: $label",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextDark
+                            )
+                            Text(
+                                text = if (state.isToday) "$dateText (нажмите для смены)" else "нажмите для календаря",
+                                fontSize = 13.sp,
+                                color = TextMuted
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = { viewModel.shiftDay(1) },
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(SoftGray, RoundedCornerShape(12.dp))
+                    ) {
+                        Text("▶", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = AccentBlue)
+                    }
+                }
+
+                if (!state.isToday) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    TextButton(onClick = { viewModel.selectToday() }) {
+                        Text(
+                            text = "ВЕРНУТЬСЯ НА СЕГОДНЯ",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = AccentBlue
+                        )
+                    }
+                }
+            }
+        }
 
         BigButton(
             text = "➕ ДОБАВИТЬ ЕДУ В ДНЕВНИК",

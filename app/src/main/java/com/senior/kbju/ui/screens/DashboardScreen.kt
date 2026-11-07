@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.senior.kbju.ui.components.BigButton
 import com.senior.kbju.ui.components.ModernCard
+import com.senior.kbju.ui.components.OutlineBigButton
 import com.senior.kbju.ui.components.RingProgress
 import com.senior.kbju.ui.theme.AccentBlue
 import com.senior.kbju.ui.theme.AccentBlueLight
@@ -230,31 +231,52 @@ fun DashboardScreen(
             }
         }
 
-        // Карточки: Съедено и Сожжено
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        // Растянутая плашка: Сожжено
+        ModernCard(
+            shape = RoundedCornerShape(18.dp),
+            backgroundColor = AccentOrangeLight,
+            borderColor = AccentOrangeBorder,
+            elevation = 1.dp,
+            modifier = Modifier.fillMaxWidth()
         ) {
-            ModernStatCard(
-                title = "Съедено",
-                value = "${state.eatenKcal} ккал",
-                icon = "🍽️",
-                subtitle = "норма: ${state.targetKcal} ккал",
-                backgroundColor = AccentGreenLight,
-                borderColor = AccentGreenBorder,
-                valueColor = AccentGreen,
-                modifier = Modifier.weight(1f)
-            )
-            ModernStatCard(
-                title = "Сожжено",
-                value = "${state.burnedKcal} ккал",
-                icon = "🔥",
-                subtitle = if (state.activityBurnedKcal > 0) "спорт: ${state.activityBurnedKcal} ккал" else "в покое + шаги",
-                backgroundColor = AccentOrangeLight,
-                borderColor = AccentOrangeBorder,
-                valueColor = AccentOrange,
-                modifier = Modifier.weight(1f)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(18.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text("🔥", fontSize = 28.sp)
+                    Column {
+                        Text(
+                            text = "Сожжено",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextDark
+                        )
+                        val subtitle = if (state.activityBurnedKcal > 0) {
+                            "спорт: ${state.activityBurnedKcal} ккал"
+                        } else {
+                            "в покое + шаги"
+                        }
+                        Text(
+                            text = subtitle,
+                            fontSize = 15.sp,
+                            color = TextMuted
+                        )
+                    }
+                }
+                Text(
+                    text = "${state.burnedKcal} ккал",
+                    fontSize = 26.sp,
+                    fontWeight = FontWeight.Black,
+                    color = AccentOrange
+                )
+            }
         }
 
         // Плашка: Дефицит за день
@@ -300,21 +322,10 @@ fun DashboardScreen(
             }
         }
 
-        // Большая кнопка "ЗАПИСАТЬ ЕДУ"
-        BigButton(
-            text = "🍏 ЗАПИСАТЬ ЕДУ",
-            onClick = onAddFood,
-            color = AccentGreen,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(68.dp)
-        )
-
-        // Крупная кнопка "Мой профиль" в глубоком графитовом цвете
-        BigButton(
+        // Крупная кнопка "Мой профиль" с высокой контрастностью и чётким текстом
+        OutlineBigButton(
             text = "👤 МОЙ ПРОФИЛЬ",
             onClick = onEditProfile,
-            color = Color(0xFF1E293B),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(66.dp)
@@ -324,60 +335,4 @@ fun DashboardScreen(
     }
 }
 
-@Composable
-private fun ModernStatCard(
-    title: String,
-    value: String,
-    icon: String,
-    subtitle: String? = null,
-    backgroundColor: Color = SurfaceWhite,
-    borderColor: Color = CardBorder,
-    valueColor: Color = TextDark,
-    modifier: Modifier = Modifier
-) {
-    ModernCard(
-        modifier = modifier,
-        backgroundColor = backgroundColor,
-        borderColor = borderColor,
-        shape = RoundedCornerShape(20.dp),
-        elevation = 2.dp
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(text = icon, fontSize = 20.sp)
-                Text(
-                    text = title,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = TextMuted,
-                    textAlign = TextAlign.Center
-                )
-            }
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = value,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Black,
-                color = valueColor,
-                textAlign = TextAlign.Center
-            )
-            if (subtitle != null) {
-                Spacer(modifier = Modifier.height(3.dp))
-                Text(
-                    text = subtitle,
-                    fontSize = 13.sp,
-                    color = TextMuted,
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-    }
-}
+

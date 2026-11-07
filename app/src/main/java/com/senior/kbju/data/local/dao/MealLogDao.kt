@@ -28,4 +28,7 @@ interface MealLogDao {
 
     @Query("DELETE FROM meal_log WHERE id = :id")
     suspend fun delete(id: Long)
+
+    @Query("DELETE FROM meal_log")
+    suspend fun clearAll()
 }

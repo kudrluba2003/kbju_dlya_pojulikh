@@ -62,14 +62,6 @@ fun WaterScreen(
             .padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        if (onBack != null) {
-            OutlineBigButton(
-                text = "← НАЗАД В МЕНЮ ЕЩЁ",
-                onClick = onBack,
-                modifier = Modifier.fillMaxWidth().height(52.dp)
-            )
-        }
-
         Text(
             text = "💧 Водный баланс",
             fontSize = 28.sp,

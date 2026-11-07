@@ -6,6 +6,7 @@ import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,6 +30,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -121,14 +123,6 @@ fun SettingsScreen(
             .padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        if (onBack != null) {
-            OutlineBigButton(
-                text = "← НАЗАД В МЕНЮ ЕЩЁ",
-                onClick = onBack,
-                modifier = Modifier.fillMaxWidth().height(52.dp)
-            )
-        }
-
         Text(
             text = "⚙️ Настройки",
             fontSize = 28.sp,
@@ -466,8 +460,39 @@ fun SettingsScreen(
                         text = msg,
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
-                        color = AccentGreen
+                        color = if (msg.startsWith("✅")) AccentGreen else ErrorRed
                     )
+
+                    if (msg.startsWith("⚠️")) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlineBigButton(
+                                text = "📋 СКОПИРОВАТЬ ТЕКСТ",
+                                onClick = {
+                                    val clipboard = context.getSystemService(android.content.Context.CLIPBOARD_SERVICE) as? android.content.ClipboardManager
+                                    clipboard?.setPrimaryClip(android.content.ClipData.newPlainText("Отзыв", feedbackInput))
+                                    android.widget.Toast.makeText(context, "Текст скопирован в буфер обмена", android.widget.Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                            OutlineBigButton(
+                                text = "✉️ В ПОЧТУ",
+                                onClick = {
+                                    val emailIntent = Intent(Intent.ACTION_SENDTO).apply {
+                                        data = Uri.parse("mailto:kudrluba2003@gmail.com")
+                                        putExtra(Intent.EXTRA_SUBJECT, "Отзыв SeniorKbju")
+                                        putExtra(Intent.EXTRA_TEXT, feedbackInput)
+                                    }
+                                    try {
+                                        context.startActivity(emailIntent)
+                                    } catch (_: Exception) {}
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+                    }
                 }
 
                 BigButton(
@@ -561,6 +586,65 @@ fun SettingsScreen(
                     }
                 }
             }
+        }
+
+        var showResetDialog by remember { mutableStateOf(false) }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 10.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            TextButton(
+                onClick = { showResetDialog = true }
+            ) {
+                Text(
+                    text = "Очистить историю дневника",
+                    fontSize = 14.sp,
+                    color = Color(0xFF94A3B8)
+                )
+            }
+        }
+
+        if (showResetDialog) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { showResetDialog = false },
+                title = {
+                    Text(
+                        text = "Очистить данные дневника?",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextDark
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Будут удалены записи о съеденной еде, физической активности, воде и история взвешиваний. Ваш профиль и каталог продуктов сохранятся.",
+                        fontSize = 16.sp,
+                        color = TextDark
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showResetDialog = false
+                            viewModel.resetAllData {
+                                android.widget.Toast.makeText(context, "Данные дневника очищены", android.widget.Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    ) {
+                        Text("ДА, ОЧИСТИТЬ", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = ErrorRed)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showResetDialog = false }) {
+                        Text("ОТМЕНА", fontSize = 16.sp, fontWeight = FontWeight.Medium, color = TextDark)
+                    }
+                },
+                shape = RoundedCornerShape(16.dp),
+                containerColor = SurfaceWhite
+            )
         }
 
         Spacer(modifier = Modifier.height(24.dp))

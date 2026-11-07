@@ -1,6 +1,7 @@
 package com.senior.kbju.ui.screens
 
 import android.app.Activity
+import android.app.DatePickerDialog
 import android.content.Intent
 import android.net.Uri
 import android.speech.RecognizerIntent
@@ -11,6 +12,20 @@ import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.io.File
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.IconButton
+import com.senior.kbju.ui.components.ModernCard
+import com.senior.kbju.ui.theme.AccentBlueLight
+import com.senior.kbju.ui.theme.CardBorder
+import com.senior.kbju.ui.theme.SurfaceWhite
+import com.senior.kbju.ui.theme.TextDark
+import com.senior.kbju.ui.theme.TextMuted
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -89,6 +104,9 @@ fun AddFoodScreen(onFinished: () -> Unit, viewModel: AddFoodViewModel = viewMode
             .padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
+        if (step != AddFoodStep.Done) {
+            FoodDateSelector(viewModel)
+        }
         when (val currentStep = step) {
             AddFoodStep.Catalog -> CatalogContent(viewModel)
             is AddFoodStep.QuickPortion -> QuickPortionContent(viewModel, currentStep.food)
@@ -98,6 +116,119 @@ fun AddFoodScreen(onFinished: () -> Unit, viewModel: AddFoodViewModel = viewMode
             AddFoodStep.Done -> DoneContent(viewModel, onFinished)
         }
         Spacer(modifier = Modifier.height(16.dp))
+    }
+}
+
+@Composable
+private fun FoodDateSelector(viewModel: AddFoodViewModel) {
+    val targetDate by viewModel.targetDate.collectAsState()
+    val context = LocalContext.current
+    val today = remember { LocalDate.now() }
+    val isToday = targetDate == today
+
+    val dateText = remember(targetDate) {
+        val formatter = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("ru"))
+        targetDate.format(formatter)
+    }
+
+    fun showDatePicker() {
+        DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                val picked = LocalDate.of(year, month + 1, dayOfMonth)
+                viewModel.selectDate(picked)
+            },
+            targetDate.year,
+            targetDate.monthValue - 1,
+            targetDate.dayOfMonth
+        ).show()
+    }
+
+    ModernCard(
+        shape = RoundedCornerShape(18.dp),
+        backgroundColor = SurfaceWhite,
+        borderColor = CardBorder,
+        elevation = 1.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp, horizontal = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = { viewModel.shiftDate(-1) },
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(SoftGray, RoundedCornerShape(12.dp))
+                ) {
+                    Text("◀", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = AccentBlue)
+                }
+
+                Row(
+                    modifier = Modifier
+                        .clickable { showDatePicker() }
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(38.dp)
+                            .background(AccentBlueLight, RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("📅", fontSize = 20.sp)
+                    }
+                    Column {
+                        val label = when (targetDate) {
+                            today -> "Сегодня"
+                            today.minusDays(1) -> "Вчера"
+                            today.plusDays(1) -> "Завтра"
+                            else -> dateText
+                        }
+                        Text(
+                            text = "Дата записи: $label",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextDark
+                        )
+                        Text(
+                            text = if (isToday) "$dateText (нажмите для смены)" else "нажмите для выбора в календаре",
+                            fontSize = 13.sp,
+                            color = TextMuted
+                        )
+                    }
+                }
+
+                IconButton(
+                    onClick = { viewModel.shiftDate(1) },
+                    modifier = Modifier
+                        .size(44.dp)
+                        .background(SoftGray, RoundedCornerShape(12.dp))
+                ) {
+                    Text("▶", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = AccentBlue)
+                }
+            }
+
+            if (!isToday) {
+                Spacer(modifier = Modifier.height(6.dp))
+                TextButton(onClick = { viewModel.resetToToday() }) {
+                    Text(
+                        text = "ВЕРНУТЬСЯ НА СЕГОДНЯ",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = AccentBlue
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -168,10 +299,9 @@ private fun CatalogContent(viewModel: AddFoodViewModel) {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            BigButton(
+            OutlineBigButton(
                 text = "📷 С ЭТИКЕТКИ",
                 onClick = viewModel::chooseLabelMode,
-                color = AccentBlue,
                 modifier = Modifier.weight(1f)
             )
             OutlineBigButton(
@@ -245,12 +375,6 @@ private fun CatalogContent(viewModel: AddFoodViewModel) {
         }
     } else {
         // Раздел «Мои рецепты»
-        BigButton(
-            text = "🍳 СОБРАТЬ НОВОЕ БЛЮДО",
-            onClick = viewModel::chooseRecipeMode,
-            color = AccentGreen
-        )
-
         SectionTitle(text = "Мои рецепты и блюда")
         Card(
             shape = RoundedCornerShape(10.dp),
@@ -516,8 +640,17 @@ private fun LabelContent(viewModel: AddFoodViewModel) {
         uri?.let { processOcrImage(it) }
     }
 
-    Text(text = "Продукт с этикетки", fontSize = 28.sp, fontWeight = FontWeight.Bold)
-    OutlineBigButton(text = "НАЗАД", onClick = viewModel::backToCatalog)
+    val isAddingToRecipe by viewModel.isAddingIngredientToRecipe.collectAsState()
+
+    Text(
+        text = if (isAddingToRecipe) "Ингредиент с этикетки" else "Продукт с этикетки",
+        fontSize = 28.sp,
+        fontWeight = FontWeight.Bold
+    )
+    OutlineBigButton(
+        text = if (isAddingToRecipe) "← НАЗАД К СБОРКЕ БЛЮДА" else "НАЗАД В КАТАЛОГ",
+        onClick = viewModel::backFromLabel
+    )
 
     Card(
         shape = RoundedCornerShape(12.dp),
@@ -643,7 +776,7 @@ private fun LabelContent(viewModel: AddFoodViewModel) {
     }
     ErrorText(error)
     BigButton(
-        text = "ЗАПИСАТЬ В ДНЕВНИК",
+        text = if (isAddingToRecipe) "➕ ДОБАВИТЬ В БЛЮДО" else "ЗАПИСАТЬ В ДНЕВНИК",
         onClick = {
             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
             viewModel.saveLabel()
@@ -683,7 +816,14 @@ private fun RecipeBuilderContent(viewModel: AddFoodViewModel) {
     PlainTextField(
         label = "Найдите ингредиент",
         value = query,
-        onValueChange = viewModel::onSearchQueryChange
+        onValueChange = viewModel::onSearchQueryChange,
+        placeholder = "Начните вводить название"
+    )
+
+    OutlineBigButton(
+        text = "📷 ДОБАВИТЬ С ЭТИКЕТКИ",
+        onClick = viewModel::chooseIngredientLabelMode,
+        modifier = Modifier.fillMaxWidth().height(56.dp)
     )
 
     // Показываем ингредиенты только при поиске, чтобы не сдвигать вниз список уже добавленных продуктов
@@ -881,6 +1021,15 @@ private fun RecipePortionContent(viewModel: AddFoodViewModel) {
 @Composable
 private fun DoneContent(viewModel: AddFoodViewModel, onFinished: () -> Unit) {
     val message by viewModel.savedMessage.collectAsState()
+    val targetDate by viewModel.targetDate.collectAsState()
+    val dateText = remember(targetDate) {
+        val today = LocalDate.now()
+        when (targetDate) {
+            today -> "сегодня (${targetDate.format(DateTimeFormatter.ofPattern("d MMMM", Locale("ru")))})"
+            today.minusDays(1) -> "вчера (${targetDate.format(DateTimeFormatter.ofPattern("d MMMM", Locale("ru")))})"
+            else -> targetDate.format(DateTimeFormatter.ofPattern("d MMMM yyyy", Locale("ru")))
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxWidth().padding(vertical = 24.dp),
@@ -892,6 +1041,12 @@ private fun DoneContent(viewModel: AddFoodViewModel, onFinished: () -> Unit) {
             text = "Записано!",
             fontSize = 32.sp,
             fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = "Дата: $dateText",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.Medium,
+            color = TextMuted
         )
         Text(
             text = message ?: "",

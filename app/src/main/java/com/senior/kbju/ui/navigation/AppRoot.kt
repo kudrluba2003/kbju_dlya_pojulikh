@@ -144,13 +144,32 @@ fun AppRoot() {
                                     NavigationBarItem(
                                         selected = selected,
                                         onClick = {
-                                            if (currentRoute != item.route) {
-                                                navController.navigate(item.route) {
-                                                    popUpTo(Routes.DASHBOARD) {
-                                                        saveState = true
+                                            if (item.route == Routes.MORE) {
+                                                if (currentRoute in moreSubRoutes && currentRoute != Routes.MORE) {
+                                                    val popped = navController.popBackStack(Routes.MORE, inclusive = false)
+                                                    if (!popped) {
+                                                        navController.navigate(Routes.MORE) {
+                                                            launchSingleTop = true
+                                                        }
                                                     }
-                                                    launchSingleTop = true
-                                                    restoreState = true
+                                                } else if (currentRoute != Routes.MORE) {
+                                                    navController.navigate(Routes.MORE) {
+                                                        popUpTo(Routes.DASHBOARD) {
+                                                            saveState = true
+                                                        }
+                                                        launchSingleTop = true
+                                                        restoreState = true
+                                                    }
+                                                }
+                                            } else {
+                                                if (currentRoute != item.route) {
+                                                    navController.navigate(item.route) {
+                                                        popUpTo(Routes.DASHBOARD) {
+                                                            saveState = true
+                                                        }
+                                                        launchSingleTop = true
+                                                        restoreState = true
+                                                    }
                                                 }
                                             }
                                         },

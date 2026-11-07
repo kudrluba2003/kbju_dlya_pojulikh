@@ -81,6 +81,19 @@ class AddFoodViewModel(app: Application) : AndroidViewModel(app) {
     val step = MutableStateFlow<AddFoodStep>(AddFoodStep.Catalog)
     val selectedMealType = MutableStateFlow(defaultMealType())
     val catalogTab = MutableStateFlow(FoodCatalogTab.SIMPLE)
+    val targetDate = MutableStateFlow<LocalDate>(LocalDate.now())
+
+    fun selectDate(date: LocalDate) {
+        targetDate.value = date
+    }
+
+    fun shiftDate(days: Long) {
+        targetDate.value = targetDate.value.plusDays(days)
+    }
+
+    fun resetToToday() {
+        targetDate.value = LocalDate.now()
+    }
 
     // ----- Поиск по каталогу -----
     val searchQuery = MutableStateFlow("")
@@ -202,7 +215,7 @@ class AddFoodViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             diaryRepository.addMeal(
                 MealLogEntity(
-                    day = LocalDate.now().toEpochDay(),
+                    day = targetDate.value.toEpochDay(),
                     name = food.name,
                     grams = grams,
                     kcal = nutrition.kcal,
@@ -217,8 +230,41 @@ class AddFoodViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    val isAddingIngredientToRecipe = MutableStateFlow(false)
+
     fun chooseLabelMode() {
+        isAddingIngredientToRecipe.value = false
+        labelName.value = ""
+        labelKcal.value = ""
+        labelProtein.value = ""
+        labelFat.value = ""
+        labelCarbs.value = ""
+        labelGrams.value = "100"
+        ocrStatus.value = null
+        labelError.value = null
         step.value = AddFoodStep.Label
+    }
+
+    fun chooseIngredientLabelMode() {
+        isAddingIngredientToRecipe.value = true
+        labelName.value = ""
+        labelKcal.value = ""
+        labelProtein.value = ""
+        labelFat.value = ""
+        labelCarbs.value = ""
+        labelGrams.value = "100"
+        ocrStatus.value = null
+        labelError.value = null
+        step.value = AddFoodStep.Label
+    }
+
+    fun backFromLabel() {
+        if (isAddingIngredientToRecipe.value) {
+            isAddingIngredientToRecipe.value = false
+            step.value = AddFoodStep.RecipeBuilder
+        } else {
+            step.value = AddFoodStep.Catalog
+        }
     }
 
     fun chooseRecipeMode() {
@@ -339,7 +385,7 @@ class AddFoodViewModel(app: Application) : AndroidViewModel(app) {
             }
             diaryRepository.addMeal(
                 MealLogEntity(
-                    day = LocalDate.now().toEpochDay(),
+                    day = targetDate.value.toEpochDay(),
                     name = name,
                     grams = gramsValue,
                     kcal = nutrition.kcal,
@@ -374,7 +420,8 @@ class AddFoodViewModel(app: Application) : AndroidViewModel(app) {
             val gramsValue = grams ?: return@launch
             if (name.isEmpty() || kcalValue < 0.0 || gramsValue <= 0.0) return@launch
 
-            if (foodRepository.findByName(name) == null) {
+            val existing = foodRepository.findByName(name)
+            val foodId = if (existing == null) {
                 foodRepository.insert(
                     FoodEntity(
                         name = name,
@@ -386,14 +433,41 @@ class AddFoodViewModel(app: Application) : AndroidViewModel(app) {
                         isUserCreated = true
                     )
                 )
+            } else {
+                existing.id
             }
+            val savedFood = foodRepository.findByName(name) ?: FoodEntity(
+                id = foodId,
+                name = name,
+                kcal100 = kcalValue,
+                protein100 = protein,
+                fat100 = fat,
+                carbs100 = carbs,
+                category = "С этикетки",
+                isUserCreated = true
+            )
+
+            if (isAddingIngredientToRecipe.value) {
+                val currentIngredients = ingredients.value.toMutableList()
+                val existingIdx = currentIngredients.indexOfFirst { it.food.name.equals(name, ignoreCase = true) }
+                if (existingIdx >= 0) {
+                    currentIngredients[existingIdx] = currentIngredients[existingIdx].copy(amountText = gramsValue.pretty())
+                } else {
+                    currentIngredients.add(IngredientRow(savedFood, amountText = gramsValue.pretty()))
+                }
+                ingredients.value = currentIngredients
+                isAddingIngredientToRecipe.value = false
+                step.value = AddFoodStep.RecipeBuilder
+                return@launch
+            }
+
             val nutrition = NutritionMath.portion(
                 Nutrients(kcalValue, protein, fat, carbs),
                 gramsValue
             )
             diaryRepository.addMeal(
                 MealLogEntity(
-                    day = LocalDate.now().toEpochDay(),
+                    day = targetDate.value.toEpochDay(),
                     name = name,
                     grams = gramsValue,
                     kcal = nutrition.kcal,
